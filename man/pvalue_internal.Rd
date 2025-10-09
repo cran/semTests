@@ -2,18 +2,20 @@
 % Please edit documentation in R/pvalues.R
 \name{pvalue_internal}
 \alias{pvalue_internal}
-\alias{pvalues_one}
+\alias{pvalues_}
 \title{P value function for one and two arguments.}
 \usage{
-pvalues_one(
-  object,
+pvalues_(
+  m0,
+  m1,
   unbiased,
   trad,
   eba,
   peba,
   pols,
-  chisq = c("trad", "rls"),
-  extras = FALSE
+  chisq = c("ml", "rls"),
+  extras = FALSE,
+  method
 )
 }
 \value{

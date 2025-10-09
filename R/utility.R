@@ -1,28 +1,82 @@
-#' Split vector `x` into `n` chunks of equal size.
-#' @param x Input vector.
-#' @param n Desired output length.
-#' @return List of `n` vectors.
-#' @keywords internal
-chunk <- function(x, n) split(x, cut(seq_along(x), n, labels = FALSE))
 
-#' Calculate a saturated model.
 #' @keywords internal
-#' @param object A `lavaan` object.
-#' @return A fitted saturated model.
-get_saturated <- function(object) {
-  data <- lavaan::lavInspect(object, "data", drop.list.single.group = T)
-  data_g <- lapply(seq_along(data), function(x) {
-    data_g <- data.frame(data[[x]])
-    data_g$g <- x
-    data_g
-  })
-  data <- do.call(rbind, data_g)
-  vars <- lavaan::lavNames(object)
-  model <- NULL
-  for (i in 1:(length(vars) - 1)) {
-    ind <- vars[(i + 1):length(vars)]
-    model <- paste(model, ";", paste(vars[i], "~~", paste(ind, collapse = "+")))
+make_chisqs <- function(chisq, m0, m1) {
+  ml <- function(object) lavaan::lavTest(object, test = "standard")$stat
+  rls <- function(object) lavaan::lavTest(object, test = "browne.residual.nt.model")$stat
+  wrap <- function(f, object) if (missing(object)) 0 else f(object)
+  chisqs <- c()
+  if ("ml" %in% chisq) chisqs["ml"] <- ml(m0) - wrap(ml, m1)
+  if ("rls" %in% chisq) chisqs["rls"] <- rls(m0) - wrap(rls, m1)
+  chisqs
+}
+
+#' Returns if not NA; else converts NA to NULL.
+#' @keywords internal
+nanull <- function(x) {
+  if (is.na(x)) {
+    NULL
+  } else {
+    x
   }
-  estimator <- lavaan::lavInspect(object, "options")$estimator
-  lavaan::lavaan(model, data, group = "g", estimator = estimator)
+}
+
+#' Common default value of 2.
+#' @keywords internal
+default <- function(x) {
+  if (x != "") as.numeric(x) else 2
+}
+
+#' Create sparse matrix
+#' @param mat Matrix input.
+#' @param lim Elements with absolute value less than `lim` get set to `0`.
+#' @return Object of `dgCMatrix`.
+sparsify <- function(mat, lim = 1e-9) {
+  mat[abs(mat) < lim] = 0
+  Matrix::Matrix(mat, sparse = TRUE)
+}
+
+#' Split string into options.
+#' @param string Input string
+#' @keywords internal
+
+split_input <- function(string) {
+
+  string <- tolower(string)
+  splitted <- strsplit(string, "_")[[1]]
+  trad <- peba <- eba <- pols <- NULL
+  unbiased <- 1
+  chisq <- "rls"
+  type <- nanull(splitted[1])
+
+  if (length(splitted) == 3) {
+    unbiased <- if (splitted[2] == "ug") 2 else 1
+    chisq <- splitted[3]
+  } else if (length(splitted) == 2) {
+    if (splitted[2] == "rls" || splitted[2] == "ml") {
+      chisq <- splitted[2]
+    } else if (splitted[2] == "ug") {
+      unbiased <- 2
+    }
+  }
+
+  if (startsWith(type, "peba")) {
+    peba <- default(substring(type, 5))
+  } else if (startsWith(type, "eba")) {
+    eba <- default(substring(type, 4))
+  } else if (startsWith(type, "pols")) {
+    pols <- default(substring(type, 5))
+  } else if (type %in% c("std", "sb", "sf", "ss", "all", "pall")) {
+    trad <- type
+  } else {
+    stop("Invalid input string in `test`.")
+  }
+
+  list(
+    trad = trad,
+    eba = eba,
+    peba = peba,
+    pols = pols,
+    unbiased = unbiased,
+    chisq = chisq
+  )
 }
