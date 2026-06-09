@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+
+
+<title>Robust test statistics with semTests</title>
+
+<script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
+// be compatible with the behavior of Pandoc < 2.8).
+document.addEventListener('DOMContentLoaded', function(e) {
+  var hs = document.querySelectorAll("div.section[class*='level'] > :first-child");
+  var i, h, a;
+  for (i = 0; i < hs.length; i++) {
+    h = hs[i];
+    if (!/^h[1-6]$/i.test(h.tagName)) continue;  // it should be a header h1-h6
+    a = h.attributes;
+    while (a.length > 0) h.removeAttribute(a[0].name);
+  }
+});
+</script>
+
+<style type="text/css">
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+span.underline{text-decoration: underline;}
+div.column{display: inline-block; vertical-align: top; width: 50%;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+</style>
+
+
+
+<style type="text/css">
+code {
+white-space: pre;
+}
+.sourceCode {
+overflow: visible;
+}
+</style>
+<style type="text/css" data-origin="pandoc">
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+{ counter-reset: source-line 0; }
+pre.numberSource code > span
+{ position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+{ content: counter(source-line);
+position: relative; left: -1em; text-align: right; vertical-align: baseline;
+border: none; display: inline-block;
+-webkit-touch-callout: none; -webkit-user-select: none;
+-khtml-user-select: none; -moz-user-select: none;
+-ms-user-select: none; user-select: none;
+padding: 0 4px; width: 4em;
+color: #aaaaaa;
+}
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa; padding-left: 4px; }
+div.sourceCode
+{ }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } 
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.at { color: #7d9029; } 
+code span.bn { color: #40a070; } 
+code span.bu { color: #008000; } 
+code span.cf { color: #007020; font-weight: bold; } 
+code span.ch { color: #4070a0; } 
+code span.cn { color: #880000; } 
+code span.co { color: #60a0b0; font-style: italic; } 
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.do { color: #ba2121; font-style: italic; } 
+code span.dt { color: #902000; } 
+code span.dv { color: #40a070; } 
+code span.er { color: #ff0000; font-weight: bold; } 
+code span.ex { } 
+code span.fl { color: #40a070; } 
+code span.fu { color: #06287e; } 
+code span.im { color: #008000; font-weight: bold; } 
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.kw { color: #007020; font-weight: bold; } 
+code span.op { color: #666666; } 
+code span.ot { color: #007020; } 
+code span.pp { color: #bc7a00; } 
+code span.sc { color: #4070a0; } 
+code span.ss { color: #bb6688; } 
+code span.st { color: #4070a0; } 
+code span.va { color: #19177c; } 
+code span.vs { color: #4070a0; } 
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } 
+</style>
+<script>
+// apply pandoc div.sourceCode style to pre.sourceCode instead
+(function() {
+  var sheets = document.styleSheets;
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
+    try { var rules = sheets[i].cssRules; } catch (e) { continue; }
+    var j = 0;
+    while (j < rules.length) {
+      var rule = rules[j];
+      // check if there is a div.sourceCode rule
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") {
+        j++;
+        continue;
+      }
+      var style = rule.style.cssText;
+      // check if color or background-color is set
+      if (rule.style.color === '' && rule.style.backgroundColor === '') {
+        j++;
+        continue;
+      }
+      // replace div.sourceCode by a pre.sourceCode rule
+      sheets[i].deleteRule(j);
+      sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
+    }
+  }
+})();
+</script>
+
+
+
+
+<style type="text/css">body {
+background-color: #fff;
+margin: 1em auto;
+max-width: 700px;
+overflow: visible;
+padding-left: 2em;
+padding-right: 2em;
+font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+font-size: 14px;
+line-height: 1.35;
+}
+#TOC {
+clear: both;
+margin: 0 0 10px 10px;
+padding: 4px;
+width: 400px;
+border: 1px solid #CCCCCC;
+border-radius: 5px;
+background-color: #f6f6f6;
+font-size: 13px;
+line-height: 1.3;
+}
+#TOC .toctitle {
+font-weight: bold;
+font-size: 15px;
+margin-left: 5px;
+}
+#TOC ul {
+padding-left: 40px;
+margin-left: -1.5em;
+margin-top: 5px;
+margin-bottom: 5px;
+}
+#TOC ul ul {
+margin-left: -2em;
+}
+#TOC li {
+line-height: 16px;
+}
+table {
+margin: 1em auto;
+border-width: 1px;
+border-color: #DDDDDD;
+border-style: outset;
+border-collapse: collapse;
+}
+table th {
+border-width: 2px;
+padding: 5px;
+border-style: inset;
+}
+table td {
+border-width: 1px;
+border-style: inset;
+line-height: 18px;
+padding: 5px 5px;
+}
+table, table th, table td {
+border-left-style: none;
+border-right-style: none;
+}
+table thead, table tr.even {
+background-color: #f7f7f7;
+}
+p {
+margin: 0.5em 0;
+}
+blockquote {
+background-color: #f6f6f6;
+padding: 0.25em 0.75em;
+}
+hr {
+border-style: solid;
+border: none;
+border-top: 1px solid #777;
+margin: 28px 0;
+}
+dl {
+margin-left: 0;
+}
+dl dd {
+margin-bottom: 13px;
+margin-left: 13px;
+}
+dl dt {
+font-weight: bold;
+}
+ul {
+margin-top: 0;
+}
+ul li {
+list-style: circle outside;
+}
+ul ul {
+margin-bottom: 0;
+}
+pre, code {
+background-color: #f7f7f7;
+border-radius: 3px;
+color: #333;
+white-space: pre-wrap; 
+}
+pre {
+border-radius: 3px;
+margin: 5px 0px 10px 0px;
+padding: 10px;
+}
+pre:not([class]) {
+background-color: #f7f7f7;
+}
+code {
+font-family: Consolas, Monaco, 'Courier New', monospace;
+font-size: 85%;
+}
+p > code, li > code {
+padding: 2px 0px;
+}
+div.figure {
+text-align: center;
+}
+img {
+background-color: #FFFFFF;
+padding: 2px;
+border: 1px solid #DDDDDD;
+border-radius: 3px;
+border: 1px solid #CCCCCC;
+margin: 0 5px;
+}
+h1 {
+margin-top: 0;
+font-size: 35px;
+line-height: 40px;
+}
+h2 {
+border-bottom: 4px solid #f7f7f7;
+padding-top: 10px;
+padding-bottom: 2px;
+font-size: 145%;
+}
+h3 {
+border-bottom: 2px solid #f7f7f7;
+padding-top: 10px;
+font-size: 120%;
+}
+h4 {
+border-bottom: 1px solid #f7f7f7;
+margin-left: 8px;
+font-size: 105%;
+}
+h5, h6 {
+border-bottom: 1px solid #ccc;
+font-size: 105%;
+}
+a {
+color: #0033dd;
+text-decoration: none;
+}
+a:hover {
+color: #6666ff; }
+a:visited {
+color: #800080; }
+a:visited:hover {
+color: #BB00BB; }
+a[href^="http:"] {
+text-decoration: underline; }
+a[href^="https:"] {
+text-decoration: underline; }
+
+code > span.kw { color: #555; font-weight: bold; } 
+code > span.dt { color: #902000; } 
+code > span.dv { color: #40a070; } 
+code > span.bn { color: #d14; } 
+code > span.fl { color: #d14; } 
+code > span.ch { color: #d14; } 
+code > span.st { color: #d14; } 
+code > span.co { color: #888888; font-style: italic; } 
+code > span.ot { color: #007020; } 
+code > span.al { color: #ff0000; font-weight: bold; } 
+code > span.fu { color: #900; font-weight: bold; } 
+code > span.er { color: #a61717; background-color: #e3d2d2; } 
+</style>
+
+
+
+
+</head>
+
+<body>
+
+
+
+
+<h1 class="title toc-ignore">Robust test statistics with semTests</h1>
+
+
+
+<div id="introduction" class="section level2">
+<h2>Introduction</h2>
+<p><code>semTests</code> computes robust <em>p</em>-values for
+structural equation models fit with <a href="https://lavaan.ugent.be/"><code>lavaan</code></a>. The standard
+chi-square test of model fit is anti-conservative under non-normality,
+and the usual corrections (Satorra–Bentler and friends) only partly fix
+it. The eigenvalue-based tests in this package target the <em>limiting
+null law</em> of the test statistic directly: that law is a weighted sum
+of independent chi-squares, <span class="math inline">\(\sum_j \lambda_j
+\chi^2_1\)</span>, whose weights <span class="math inline">\(\lambda_j\)</span> are the eigenvalues of a matrix
+built from the model and the asymptotic covariance of the sample
+moments. Because this holds for any minimum-discrepancy estimator, the
+tests are not specific to normal-theory maximum likelihood.</p>
+<p>The penalized eigenvalue block-averaging (<code>pEBA</code>) and
+penalized regression (<code>pOLS</code>) methods were introduced by
+Foldnes, Moss, &amp; Grønneberg (2024) and extended to nested model
+comparison by Foldnes, Grønneberg, &amp; Moss (2026).</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="fu">library</span>(<span class="st">&quot;semTests&quot;</span>)</span>
+<span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a><span class="fu">library</span>(<span class="st">&quot;lavaan&quot;</span>)</span></code></pre></div>
+</div>
+<div id="basic-usage-goodness-of-fit" class="section level2">
+<h2>Basic usage: goodness of fit</h2>
+<p>Fit a model with <code>lavaan</code>, then call
+<code>pvalues()</code>. Fit with a robust test (e.g.
+<code>estimator = &quot;MLM&quot;</code> or <code>&quot;MLR&quot;</code>) so that lavaan
+exposes the asymptotic moment covariance the correction needs.</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a>model <span class="ot">&lt;-</span> <span class="st">&quot;visual  =~ x1 + x2 + x3</span></span>
+<span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a><span class="st">          textual =~ x4 + x5 + x6</span></span>
+<span id="cb2-3"><a href="#cb2-3" tabindex="-1"></a><span class="st">          speed   =~ x7 + x8 + x9&quot;</span></span>
+<span id="cb2-4"><a href="#cb2-4" tabindex="-1"></a>fit <span class="ot">&lt;-</span> <span class="fu">cfa</span>(model, HolzingerSwineford1939, <span class="at">estimator =</span> <span class="st">&quot;MLM&quot;</span>)</span>
+<span id="cb2-5"><a href="#cb2-5" tabindex="-1"></a><span class="fu">pvalues</span>(fit)</span>
+<span id="cb2-6"><a href="#cb2-6" tabindex="-1"></a><span class="co">#&gt;    peba4_rls </span></span>
+<span id="cb2-7"><a href="#cb2-7" tabindex="-1"></a><span class="co">#&gt; 5.165737e-07 </span></span>
+<span id="cb2-8"><a href="#cb2-8" tabindex="-1"></a><span class="co">#&gt; estimator: ML | data: continuous | information: expected | df: 24</span></span></code></pre></div>
+<p>The result is a named vector that also prints a one-line provenance
+footer recording the estimator, data type, information matrix, and
+degrees of freedom actually used. The full option record is available
+with <code>attr(x, &quot;semtests&quot;)</code>.</p>
+<div id="the-test-name-grammar" class="section level3">
+<h3>The test-name grammar</h3>
+<p>Each requested test is a string of the form
+<code>(test)_(ug?)_(ml|rls)</code>:</p>
+<ul>
+<li><strong>test</strong> — the family: <code>pEBA&lt;j&gt;</code>
+(penalized block-averaging, the recommended default; <code>j</code> is
+the number of blocks, typically 2–6), <code>pOLS&lt;gamma&gt;</code>
+(penalized regression), <code>pall</code>/<code>all</code>,
+<code>eba&lt;j&gt;</code>, or a traditional statistic <code>std</code>,
+<code>sb</code> (Satorra–Bentler), <code>ss</code> (scaled-and-shifted),
+<code>sf</code> (scaled <em>F</em>).</li>
+<li><strong>ug</strong> — include <code>UG</code> to use the unbiased
+Du–Bentler (2022) gamma instead of the standard biased one.</li>
+<li><strong>ml / rls</strong> — the base chi-square: <code>ML</code>
+(normal-theory discrepancy) or <code>RLS</code> (Browne’s reweighted
+least squares). When omitted, a fit-appropriate default is chosen.</li>
+</ul>
+<p>Several tests can be requested at once:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a><span class="fu">pvalues</span>(fit, <span class="fu">c</span>(<span class="st">&quot;SB_ML&quot;</span>, <span class="st">&quot;pEBA4_ML&quot;</span>, <span class="st">&quot;pOLS2_ML&quot;</span>))</span>
+<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a><span class="co">#&gt;        sb_ml     peba4_ml     pols2_ml </span></span>
+<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a><span class="co">#&gt; 4.416190e-08 1.529685e-07 1.519741e-07 </span></span>
+<span id="cb3-4"><a href="#cb3-4" tabindex="-1"></a><span class="co">#&gt; estimator: ML | data: continuous | information: expected | df: 24</span></span></code></pre></div>
+<p>The <code>UG</code> gamma and the <code>RLS</code> statistic are
+defined only for the classical case (continuous, complete data,
+<code>estimator = &quot;ML&quot;</code>); off that case they are refused with an
+informative error rather than silently degrading.</p>
+</div>
+</div>
+<div id="nested-model-comparison" class="section level2">
+<h2>Nested model comparison</h2>
+<p>To compare two nested models, fit both and pass them to
+<code>pvalues_nested()</code> with the <strong>constrained</strong>
+model first. Here we test weak invariance of the textual loadings:</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a>constrained <span class="ot">&lt;-</span> <span class="st">&quot;visual  =~ x1 + x2 + x3</span></span>
+<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a><span class="st">                textual =~ a*x4 + a*x5 + a*x6</span></span>
+<span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a><span class="st">                speed   =~ x7 + x8 + x9&quot;</span></span>
+<span id="cb4-4"><a href="#cb4-4" tabindex="-1"></a>m1 <span class="ot">&lt;-</span> <span class="fu">cfa</span>(model, HolzingerSwineford1939, <span class="at">estimator =</span> <span class="st">&quot;MLM&quot;</span>)</span>
+<span id="cb4-5"><a href="#cb4-5" tabindex="-1"></a>m0 <span class="ot">&lt;-</span> <span class="fu">cfa</span>(constrained, HolzingerSwineford1939, <span class="at">estimator =</span> <span class="st">&quot;MLM&quot;</span>)</span>
+<span id="cb4-6"><a href="#cb4-6" tabindex="-1"></a><span class="fu">pvalues_nested</span>(m0, m1)</span>
+<span id="cb4-7"><a href="#cb4-7" tabindex="-1"></a><span class="co">#&gt; pall_ug_ml </span></span>
+<span id="cb4-8"><a href="#cb4-8" tabindex="-1"></a><span class="co">#&gt;  0.0166158 </span></span>
+<span id="cb4-9"><a href="#cb4-9" tabindex="-1"></a><span class="co">#&gt; estimator: ML | data: continuous | information: expected | df: 2 | nested (method 2000)</span></span></code></pre></div>
+<p><code>pall</code> is the recommended default for nested comparison
+(Foldnes, Grønneberg, &amp; Moss, 2026). The reduction
+<code>method</code> defaults to <code>&quot;2000&quot;</code> (Satorra 2000);
+<code>&quot;2001&quot;</code> is also available for complete-data fits.</p>
+</div>
+<div id="other-estimators-and-missing-data-experimental" class="section level2">
+<h2>Other estimators and missing data (experimental)</h2>
+<p>The same machinery applies to other estimators. The non-ML paths
+below are <strong>experimental</strong> as of this release; the
+classical ML path is stable. See <code>?semTests-support</code> for the
+authoritative matrix of what is supported.</p>
+<p>GLS and ULS work directly (ULS needs a robust test for the asymptotic
+covariance):</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a>gls <span class="ot">&lt;-</span> <span class="fu">cfa</span>(model, HolzingerSwineford1939, <span class="at">estimator =</span> <span class="st">&quot;GLS&quot;</span>)</span>
+<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a><span class="fu">pvalues</span>(gls, <span class="st">&quot;pEBA4&quot;</span>)</span>
+<span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a><span class="co">#&gt;     peba4_ml </span></span>
+<span id="cb5-4"><a href="#cb5-4" tabindex="-1"></a><span class="co">#&gt; 8.854857e-07 </span></span>
+<span id="cb5-5"><a href="#cb5-5" tabindex="-1"></a><span class="co">#&gt; estimator: GLS | data: continuous | information: expected | df: 24</span></span>
+<span id="cb5-6"><a href="#cb5-6" tabindex="-1"></a></span>
+<span id="cb5-7"><a href="#cb5-7" tabindex="-1"></a>uls <span class="ot">&lt;-</span> <span class="fu">cfa</span>(model, HolzingerSwineford1939, <span class="at">estimator =</span> <span class="st">&quot;ULS&quot;</span>,</span>
+<span id="cb5-8"><a href="#cb5-8" tabindex="-1"></a>           <span class="at">test =</span> <span class="st">&quot;satorra.bentler&quot;</span>)</span>
+<span id="cb5-9"><a href="#cb5-9" tabindex="-1"></a><span class="fu">pvalues</span>(uls, <span class="st">&quot;pEBA4&quot;</span>)</span>
+<span id="cb5-10"><a href="#cb5-10" tabindex="-1"></a><span class="co">#&gt;     peba4_ml </span></span>
+<span id="cb5-11"><a href="#cb5-11" tabindex="-1"></a><span class="co">#&gt; 2.527109e-08 </span></span>
+<span id="cb5-12"><a href="#cb5-12" tabindex="-1"></a><span class="co">#&gt; estimator: ULS | data: continuous | information: expected | df: 24</span></span></code></pre></div>
+<p>Missing data is handled through full-information maximum likelihood.
+Fit with <code>missing = &quot;fiml&quot;</code> and pass the fit to
+<code>pvalues()</code> as usual. FIML uses the biased gamma and the
+standard statistic, so the <code>UG</code>/<code>RLS</code> suffixes do
+not apply; the default suffix-free tests are the right choice.</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a>HS <span class="ot">&lt;-</span> HolzingerSwineford1939</span>
+<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">1</span>)</span>
+<span id="cb6-3"><a href="#cb6-3" tabindex="-1"></a>HS<span class="sc">$</span>x1[<span class="fu">sample</span>(<span class="fu">nrow</span>(HS), <span class="dv">60</span>)] <span class="ot">&lt;-</span> <span class="cn">NA</span></span>
+<span id="cb6-4"><a href="#cb6-4" tabindex="-1"></a>fit_fiml <span class="ot">&lt;-</span> <span class="fu">cfa</span>(model, HS, <span class="at">missing =</span> <span class="st">&quot;fiml&quot;</span>, <span class="at">estimator =</span> <span class="st">&quot;MLR&quot;</span>)</span>
+<span id="cb6-5"><a href="#cb6-5" tabindex="-1"></a><span class="fu">pvalues</span>(fit_fiml)</span>
+<span id="cb6-6"><a href="#cb6-6" tabindex="-1"></a><span class="co">#&gt;     peba4_ml </span></span>
+<span id="cb6-7"><a href="#cb6-7" tabindex="-1"></a><span class="co">#&gt; 2.845788e-08 </span></span>
+<span id="cb6-8"><a href="#cb6-8" tabindex="-1"></a><span class="co">#&gt; estimator: ML (FIML) | data: continuous | information: observed | df: 24</span></span></code></pre></div>
+<p>FIML inference rests on the observed information under MAR (lavaan’s
+default for <code>missing = &quot;fiml&quot;</code>); a fit using expected
+information triggers a warning, since that is valid only under the
+stronger MCAR assumption.</p>
+</div>
+<div id="references" class="section level2">
+<h2>References</h2>
+<p>Du, H., &amp; Bentler, P. M. (2022). 40-Year Old Unbiased
+Distribution Free Estimator Reliably Improves SEM Statistics for
+Nonnormal Data. <em>Structural Equation Modeling</em>, 29(6), 872–887.
+<a href="https://doi.org/10.1080/10705511.2022.2063870" class="uri">https://doi.org/10.1080/10705511.2022.2063870</a></p>
+<p>Foldnes, N., Moss, J., &amp; Grønneberg, S. (2024). Improved goodness
+of fit procedures for structural equation models. <em>Structural
+Equation Modeling: A Multidisciplinary Journal</em>, 1–13. <a href="https://doi.org/10.1080/10705511.2024.2372028" class="uri">https://doi.org/10.1080/10705511.2024.2372028</a></p>
+<p>Foldnes, N., Grønneberg, S., &amp; Moss, J. (2026). Penalized
+eigenvalue block averaging: Extension to nested model comparison and
+Monte Carlo evaluations. <em>Behavior Research Methods</em>. <a href="https://doi.org/10.3758/s13428-026-02968-4" class="uri">https://doi.org/10.3758/s13428-026-02968-4</a></p>
+</div>
+
+
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>
