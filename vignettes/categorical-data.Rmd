@@ -1,0 +1,199 @@
+---
+title: "Categorical and mixed-indicator models"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Categorical and mixed-indicator models}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  message = FALSE,
+  warning = FALSE
+)
+```
+
+## Scope
+
+This guide covers ordered and mixed indicators. The implementation covers
+lavaan's DWLS and ULS families, one or several groups, and listwise or pairwise
+missingness. The supported paths have also been checked against a separate
+implementation.
+
+For these models, `semTests` uses lavaan's unscaled statistic and the
+eigenvalues stored in `lavInspect(fit, "UGamma")`. The Du--Bentler `UG` option
+and the continuous-data `RLS` statistic belong to a different setting, so test
+names here do not use either suffix.
+
+```{r setup}
+library("semTests")
+library("lavaan")
+
+model <- "
+  visual  =~ x1 + x2 + x3
+  textual =~ x4 + x5 + x6
+  speed   =~ x7 + x8 + x9
+"
+
+ordered_names <- paste0("x", 1:9)
+ordinal_data <- HolzingerSwineford1939
+ordinal_data[ordered_names] <- lapply(
+  ordinal_data[ordered_names],
+  function(x) {
+    ordered(cut(
+      x,
+      breaks = c(-Inf, quantile(x, c(.33, .67)), Inf),
+      include.lowest = TRUE
+    ))
+  }
+)
+```
+
+The cuts give a reproducible teaching example. They are not a recommendation to
+turn continuous measurements into categories.
+
+## Overall goodness of fit
+
+lavaan's `WLSMV` shortcut fits the DWLS family and requests a
+mean-and-variance-adjusted test. From there, `pvalues()` works as usual:
+
+```{r ordinal-fit}
+fit_ordinal <- cfa(
+  model, ordinal_data,
+  ordered = ordered_names,
+  estimator = "WLSMV"
+)
+
+pvalues(fit_ordinal, c("STD", "SB", "SS", "ALL", "PEBA4"))
+```
+
+The footer records both the base estimator (`DWLS`) and the estimator requested
+from lavaan (`WLSMV`). It also records the categorical parameterization.
+
+```{r ordinal-provenance}
+attr(pvalues(fit_ordinal, "PEBA4"), "semtests")
+```
+
+The `SB` and `SS` results are a quick check against lavaan's public
+robust corrections. The eigenvalue methods use more of the reference
+distribution, so they need not give the same p-value.
+
+## Estimator families
+
+The accepted shortcuts include:
+
+* DWLS, WLSM, WLSMV, and WLSMVS
+* ULS, ULSM, and ULSMV
+
+Full WLS/ADF is refused. Its weight already produces an identity spectrum, so
+every correction reduces to the ordinary chi-square. There is no extra
+correction for `semTests` to make.
+
+## Mixed indicators
+
+Only variables named in `ordered` are treated as categorical. The remaining
+indicators stay continuous:
+
+```{r mixed-fit}
+mixed_names <- paste0("x", 1:6)
+mixed_data <- HolzingerSwineford1939
+mixed_data[mixed_names] <- lapply(
+  mixed_data[mixed_names],
+  function(x) {
+    ordered(cut(
+      x,
+      breaks = c(-Inf, quantile(x, c(.33, .67)), Inf),
+      include.lowest = TRUE
+    ))
+  }
+)
+
+fit_mixed <- cfa(
+  model, mixed_data,
+  ordered = mixed_names,
+  estimator = "WLSMV"
+)
+pvalues(fit_mixed, "PEBA4")
+```
+
+Mixed models combine thresholds with the usual covariance and mean information.
+Lavaan has already done that bookkeeping, and `semTests` reads the resulting
+spectrum directly.
+
+## Pairwise missingness
+
+With pairwise estimation, lavaan uses the observations available for each
+statistic:
+
+```{r pairwise-fit}
+pairwise_data <- ordinal_data
+set.seed(314)
+for (variable in ordered_names) {
+  pairwise_data[sample(nrow(pairwise_data), 35), variable] <- NA
+}
+
+fit_pairwise <- cfa(
+  model, pairwise_data,
+  ordered = ordered_names,
+  estimator = "WLSMV",
+  missing = "pairwise"
+)
+pvalues(fit_pairwise, c("SB", "SS", "PEBA4"))
+```
+
+`semTests` follows lavaan's pairwise sample-statistic and `UGamma`
+calculation. Pairwise deletion brings its own assumptions about missingness, so
+report and defend that choice separately. It is not FIML.
+
+## Nested categorical models
+
+For categorical models, nested comparison uses Satorra's 2000 construction and
+the delta restriction map:
+
+```{r categorical-nested}
+constrained <- "
+  visual  =~ x1 + a*x2 + a*x3
+  textual =~ x4 + b*x5 + b*x6
+  speed   =~ x7 + x8 + x9
+"
+
+m1 <- cfa(
+  model, ordinal_data,
+  ordered = ordered_names, estimator = "WLSMV"
+)
+m0 <- cfa(
+  constrained, ordinal_data,
+  ordered = ordered_names, estimator = "WLSMV"
+)
+
+pvalues_nested(
+  m0, m1,
+  method = "2000", A.method = "delta",
+  tests = c("SB", "SS", "PALL")
+)
+```
+
+Both fits must use the same requested estimator, parameterization, variables,
+groups, raw data, and missingness mask. Method 2001 and the exact restriction
+map are unavailable for this family.
+
+## Practical checks
+
+Before reading too much into a p-value, check the basics:
+
+1. Verify convergence and adequate category counts.
+2. Look for sparse categories and, when relevant, small pairwise counts.
+3. Confirm that the two nested fits use identical data and options.
+4. Compare `SB` and `SS` with lavaan as a quick numerical check.
+5. Report the estimator and any use of pairwise missingness.
+
+## References
+
+Satorra, A. (2000). Scaled and adjusted restricted tests in multi-sample
+analysis of moment structures. In R. D. H. Heijmans, D. S. G. Pollock, &
+A. Satorra (Eds.), *Innovations in Multivariate Statistical Analysis*
+(pp. 233–247). Kluwer Academic.
+<https://doi.org/10.1007/978-1-4615-4603-0_17>

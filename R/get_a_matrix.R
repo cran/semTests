@@ -6,18 +6,7 @@
 # Delta from lavInspect; see fiml_fmg.R.)
 
 get_a_matrix <- function(m1, m0) {
-
-  delta <- function(m) {
-    d <- lavaan::lavInspect(m, "delta")
-    d <- if (is.list(d)) do.call(rbind, lapply(d, as.matrix)) else as.matrix(d)
-    if (m@Model@eq.constraints) {
-      return(d %*% m@Model@eq.constraints.K)
-    }
-    if (methods::.hasSlot(m@Model, "ceq.simple.only") && m@Model@ceq.simple.only) {
-      return(d %*% t(m@Model@ceq.simple.K))
-    }
-    d
-  }
-
-  t(get_orthogonal_complement(generalized_inverse(delta(m1)) %*% delta(m0)))
+  map <- generalized_inverse(model_effective_delta(m1)) %*%
+    model_effective_delta(m0)
+  t(get_orthogonal_complement(map))
 }

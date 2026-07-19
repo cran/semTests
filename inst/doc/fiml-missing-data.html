@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+
+
+<title>FIML models and information conventions</title>
+
+<script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
+// be compatible with the behavior of Pandoc < 2.8).
+document.addEventListener('DOMContentLoaded', function(e) {
+  var hs = document.querySelectorAll("div.section[class*='level'] > :first-child");
+  var i, h, a;
+  for (i = 0; i < hs.length; i++) {
+    h = hs[i];
+    if (!/^h[1-6]$/i.test(h.tagName)) continue;  // it should be a header h1-h6
+    a = h.attributes;
+    while (a.length > 0) h.removeAttribute(a[0].name);
+  }
+});
+</script>
+
+<style type="text/css">
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+span.underline{text-decoration: underline;}
+div.column{display: inline-block; vertical-align: top; width: 50%;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+</style>
+
+
+
+<style type="text/css">
+code {
+white-space: pre;
+}
+.sourceCode {
+overflow: visible;
+}
+</style>
+<style type="text/css" data-origin="pandoc">
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+{ counter-reset: source-line 0; }
+pre.numberSource code > span
+{ position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+{ content: counter(source-line);
+position: relative; left: -1em; text-align: right; vertical-align: baseline;
+border: none; display: inline-block;
+-webkit-touch-callout: none; -webkit-user-select: none;
+-khtml-user-select: none; -moz-user-select: none;
+-ms-user-select: none; user-select: none;
+padding: 0 4px; width: 4em;
+color: #aaaaaa;
+}
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa; padding-left: 4px; }
+div.sourceCode
+{ }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } 
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.at { color: #7d9029; } 
+code span.bn { color: #40a070; } 
+code span.bu { color: #008000; } 
+code span.cf { color: #007020; font-weight: bold; } 
+code span.ch { color: #4070a0; } 
+code span.cn { color: #880000; } 
+code span.co { color: #60a0b0; font-style: italic; } 
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.do { color: #ba2121; font-style: italic; } 
+code span.dt { color: #902000; } 
+code span.dv { color: #40a070; } 
+code span.er { color: #ff0000; font-weight: bold; } 
+code span.ex { } 
+code span.fl { color: #40a070; } 
+code span.fu { color: #06287e; } 
+code span.im { color: #008000; font-weight: bold; } 
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.kw { color: #007020; font-weight: bold; } 
+code span.op { color: #666666; } 
+code span.ot { color: #007020; } 
+code span.pp { color: #bc7a00; } 
+code span.sc { color: #4070a0; } 
+code span.ss { color: #bb6688; } 
+code span.st { color: #4070a0; } 
+code span.va { color: #19177c; } 
+code span.vs { color: #4070a0; } 
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } 
+</style>
+<script>
+// apply pandoc div.sourceCode style to pre.sourceCode instead
+(function() {
+  var sheets = document.styleSheets;
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
+    try { var rules = sheets[i].cssRules; } catch (e) { continue; }
+    var j = 0;
+    while (j < rules.length) {
+      var rule = rules[j];
+      // check if there is a div.sourceCode rule
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") {
+        j++;
+        continue;
+      }
+      var style = rule.style.cssText;
+      // check if color or background-color is set
+      if (rule.style.color === '' && rule.style.backgroundColor === '') {
+        j++;
+        continue;
+      }
+      // replace div.sourceCode by a pre.sourceCode rule
+      sheets[i].deleteRule(j);
+      sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
+    }
+  }
+})();
+</script>
+
+
+
+
+<style type="text/css">body {
+background-color: #fff;
+margin: 1em auto;
+max-width: 700px;
+overflow: visible;
+padding-left: 2em;
+padding-right: 2em;
+font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+font-size: 14px;
+line-height: 1.35;
+}
+#TOC {
+clear: both;
+margin: 0 0 10px 10px;
+padding: 4px;
+width: 400px;
+border: 1px solid #CCCCCC;
+border-radius: 5px;
+background-color: #f6f6f6;
+font-size: 13px;
+line-height: 1.3;
+}
+#TOC .toctitle {
+font-weight: bold;
+font-size: 15px;
+margin-left: 5px;
+}
+#TOC ul {
+padding-left: 40px;
+margin-left: -1.5em;
+margin-top: 5px;
+margin-bottom: 5px;
+}
+#TOC ul ul {
+margin-left: -2em;
+}
+#TOC li {
+line-height: 16px;
+}
+table {
+margin: 1em auto;
+border-width: 1px;
+border-color: #DDDDDD;
+border-style: outset;
+border-collapse: collapse;
+}
+table th {
+border-width: 2px;
+padding: 5px;
+border-style: inset;
+}
+table td {
+border-width: 1px;
+border-style: inset;
+line-height: 18px;
+padding: 5px 5px;
+}
+table, table th, table td {
+border-left-style: none;
+border-right-style: none;
+}
+table thead, table tr.even {
+background-color: #f7f7f7;
+}
+p {
+margin: 0.5em 0;
+}
+blockquote {
+background-color: #f6f6f6;
+padding: 0.25em 0.75em;
+}
+hr {
+border-style: solid;
+border: none;
+border-top: 1px solid #777;
+margin: 28px 0;
+}
+dl {
+margin-left: 0;
+}
+dl dd {
+margin-bottom: 13px;
+margin-left: 13px;
+}
+dl dt {
+font-weight: bold;
+}
+ul {
+margin-top: 0;
+}
+ul li {
+list-style: circle outside;
+}
+ul ul {
+margin-bottom: 0;
+}
+pre, code {
+background-color: #f7f7f7;
+border-radius: 3px;
+color: #333;
+white-space: pre-wrap; 
+}
+pre {
+border-radius: 3px;
+margin: 5px 0px 10px 0px;
+padding: 10px;
+}
+pre:not([class]) {
+background-color: #f7f7f7;
+}
+code {
+font-family: Consolas, Monaco, 'Courier New', monospace;
+font-size: 85%;
+}
+p > code, li > code {
+padding: 2px 0px;
+}
+div.figure {
+text-align: center;
+}
+img {
+background-color: #FFFFFF;
+padding: 2px;
+border: 1px solid #DDDDDD;
+border-radius: 3px;
+border: 1px solid #CCCCCC;
+margin: 0 5px;
+}
+h1 {
+margin-top: 0;
+font-size: 35px;
+line-height: 40px;
+}
+h2 {
+border-bottom: 4px solid #f7f7f7;
+padding-top: 10px;
+padding-bottom: 2px;
+font-size: 145%;
+}
+h3 {
+border-bottom: 2px solid #f7f7f7;
+padding-top: 10px;
+font-size: 120%;
+}
+h4 {
+border-bottom: 1px solid #f7f7f7;
+margin-left: 8px;
+font-size: 105%;
+}
+h5, h6 {
+border-bottom: 1px solid #ccc;
+font-size: 105%;
+}
+a {
+color: #0033dd;
+text-decoration: none;
+}
+a:hover {
+color: #6666ff; }
+a:visited {
+color: #800080; }
+a:visited:hover {
+color: #BB00BB; }
+a[href^="http:"] {
+text-decoration: underline; }
+a[href^="https:"] {
+text-decoration: underline; }
+
+code > span.kw { color: #555; font-weight: bold; } 
+code > span.dt { color: #902000; } 
+code > span.dv { color: #40a070; } 
+code > span.bn { color: #d14; } 
+code > span.fl { color: #d14; } 
+code > span.ch { color: #d14; } 
+code > span.st { color: #d14; } 
+code > span.co { color: #888888; font-style: italic; } 
+code > span.ot { color: #007020; } 
+code > span.al { color: #ff0000; font-weight: bold; } 
+code > span.fu { color: #900; font-weight: bold; } 
+code > span.er { color: #a61717; background-color: #e3d2d2; } 
+</style>
+
+
+
+
+</head>
+
+<body>
+
+
+
+
+<h1 class="title toc-ignore">FIML models and information
+conventions</h1>
+
+
+
+<div id="scope" class="section level2">
+<h2>Scope</h2>
+<p><code>semTests</code> supports continuous FIML models with one or
+several groups. Observed exogenous predictors can be included when they
+are modeled jointly by setting <code>fixed.x = FALSE</code> and
+<code>conditional.x = FALSE</code>. Fixed or conditional predictors need
+a different reference distribution and are refused for now. These models
+use the standard likelihood-ratio statistic and the usual biased gamma
+estimate. The complete-data <code>RLS</code> and Du–Bentler
+<code>UG</code> choices do not apply.</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="fu">library</span>(<span class="st">&quot;semTests&quot;</span>)</span>
+<span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a><span class="fu">library</span>(<span class="st">&quot;lavaan&quot;</span>)</span>
+<span id="cb1-3"><a href="#cb1-3" tabindex="-1"></a></span>
+<span id="cb1-4"><a href="#cb1-4" tabindex="-1"></a>model <span class="ot">&lt;-</span> <span class="st">&quot;</span></span>
+<span id="cb1-5"><a href="#cb1-5" tabindex="-1"></a><span class="st">  visual  =~ x1 + x2 + x3</span></span>
+<span id="cb1-6"><a href="#cb1-6" tabindex="-1"></a><span class="st">  textual =~ x4 + x5 + x6</span></span>
+<span id="cb1-7"><a href="#cb1-7" tabindex="-1"></a><span class="st">  speed   =~ x7 + x8 + x9</span></span>
+<span id="cb1-8"><a href="#cb1-8" tabindex="-1"></a><span class="st">&quot;</span></span></code></pre></div>
+</div>
+<div id="a-reproducible-mar-like-example" class="section level2">
+<h2>A reproducible MAR-like example</h2>
+<p>To make the information choice visible, we let missingness in
+<code>x1</code> and <code>x5</code> depend on <code>x9</code>, which
+stays observed. This gives the example a reproducible MAR-like
+mechanism. It says nothing about the missingness process in the original
+data.</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a>fiml_data <span class="ot">&lt;-</span> HolzingerSwineford1939</span>
+<span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">20260717</span>)</span>
+<span id="cb2-3"><a href="#cb2-3" tabindex="-1"></a>driver <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(<span class="fu">scale</span>(fiml_data<span class="sc">$</span>x9))</span>
+<span id="cb2-4"><a href="#cb2-4" tabindex="-1"></a></span>
+<span id="cb2-5"><a href="#cb2-5" tabindex="-1"></a>missing_x1 <span class="ot">&lt;-</span> <span class="fu">runif</span>(<span class="fu">nrow</span>(fiml_data)) <span class="sc">&lt;</span></span>
+<span id="cb2-6"><a href="#cb2-6" tabindex="-1"></a>  <span class="fu">plogis</span>(<span class="fu">qlogis</span>(.<span class="dv">20</span>) <span class="sc">+</span> .<span class="dv">8</span> <span class="sc">*</span> driver)</span>
+<span id="cb2-7"><a href="#cb2-7" tabindex="-1"></a>missing_x5 <span class="ot">&lt;-</span> <span class="fu">runif</span>(<span class="fu">nrow</span>(fiml_data)) <span class="sc">&lt;</span></span>
+<span id="cb2-8"><a href="#cb2-8" tabindex="-1"></a>  <span class="fu">plogis</span>(<span class="fu">qlogis</span>(.<span class="dv">20</span>) <span class="sc">-</span> .<span class="dv">8</span> <span class="sc">*</span> driver)</span>
+<span id="cb2-9"><a href="#cb2-9" tabindex="-1"></a></span>
+<span id="cb2-10"><a href="#cb2-10" tabindex="-1"></a>fiml_data<span class="sc">$</span>x1[missing_x1] <span class="ot">&lt;-</span> <span class="cn">NA</span></span>
+<span id="cb2-11"><a href="#cb2-11" tabindex="-1"></a>fiml_data<span class="sc">$</span>x5[missing_x5] <span class="ot">&lt;-</span> <span class="cn">NA</span></span>
+<span id="cb2-12"><a href="#cb2-12" tabindex="-1"></a><span class="fu">colMeans</span>(<span class="fu">is.na</span>(fiml_data[<span class="fu">paste0</span>(<span class="st">&quot;x&quot;</span>, <span class="dv">1</span><span class="sc">:</span><span class="dv">9</span>)]))</span>
+<span id="cb2-13"><a href="#cb2-13" tabindex="-1"></a><span class="co">#&gt;        x1        x2        x3        x4        x5        x6        x7        x8 </span></span>
+<span id="cb2-14"><a href="#cb2-14" tabindex="-1"></a><span class="co">#&gt; 0.2624585 0.0000000 0.0000000 0.0000000 0.2059801 0.0000000 0.0000000 0.0000000 </span></span>
+<span id="cb2-15"><a href="#cb2-15" tabindex="-1"></a><span class="co">#&gt;        x9 </span></span>
+<span id="cb2-16"><a href="#cb2-16" tabindex="-1"></a><span class="co">#&gt; 0.0000000</span></span></code></pre></div>
+<p>Fit the model using FIML:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a>fit_observed <span class="ot">&lt;-</span> <span class="fu">cfa</span>(</span>
+<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a>  model, fiml_data,</span>
+<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a>  <span class="at">missing =</span> <span class="st">&quot;fiml&quot;</span>,</span>
+<span id="cb3-4"><a href="#cb3-4" tabindex="-1"></a>  <span class="at">estimator =</span> <span class="st">&quot;MLR&quot;</span></span>
+<span id="cb3-5"><a href="#cb3-5" tabindex="-1"></a>)</span>
+<span id="cb3-6"><a href="#cb3-6" tabindex="-1"></a></span>
+<span id="cb3-7"><a href="#cb3-7" tabindex="-1"></a><span class="fu">pvalues</span>(fit_observed, <span class="fu">c</span>(<span class="st">&quot;SB&quot;</span>, <span class="st">&quot;SS&quot;</span>, <span class="st">&quot;PEBA4&quot;</span>))</span>
+<span id="cb3-8"><a href="#cb3-8" tabindex="-1"></a><span class="co">#&gt;        sb_ml        ss_ml     peba4_ml </span></span>
+<span id="cb3-9"><a href="#cb3-9" tabindex="-1"></a><span class="co">#&gt; 2.442470e-08 1.018704e-07 6.558237e-08 </span></span>
+<span id="cb3-10"><a href="#cb3-10" tabindex="-1"></a><span class="co">#&gt; estimator: ML (MLR) (FIML) | data: continuous | information: observed | df: 24 | FIML convention: observed</span></span></code></pre></div>
+<p>An observed predictor works too when its distribution belongs to the
+joint model:</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a>model_x <span class="ot">&lt;-</span> <span class="st">&quot;</span></span>
+<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a><span class="st">  visual =~ x1 + x2 + x3</span></span>
+<span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a><span class="st">  visual ~ ageyr</span></span>
+<span id="cb4-4"><a href="#cb4-4" tabindex="-1"></a><span class="st">&quot;</span></span>
+<span id="cb4-5"><a href="#cb4-5" tabindex="-1"></a></span>
+<span id="cb4-6"><a href="#cb4-6" tabindex="-1"></a>random_x_data <span class="ot">&lt;-</span> fiml_data</span>
+<span id="cb4-7"><a href="#cb4-7" tabindex="-1"></a>random_x_data<span class="sc">$</span>ageyr[<span class="fu">seq</span>(<span class="dv">7</span>, <span class="fu">nrow</span>(random_x_data), <span class="at">by =</span> <span class="dv">23</span>)] <span class="ot">&lt;-</span> <span class="cn">NA</span></span>
+<span id="cb4-8"><a href="#cb4-8" tabindex="-1"></a></span>
+<span id="cb4-9"><a href="#cb4-9" tabindex="-1"></a>fit_random_x <span class="ot">&lt;-</span> <span class="fu">cfa</span>(</span>
+<span id="cb4-10"><a href="#cb4-10" tabindex="-1"></a>  model_x, random_x_data,</span>
+<span id="cb4-11"><a href="#cb4-11" tabindex="-1"></a>  <span class="at">missing =</span> <span class="st">&quot;fiml&quot;</span>, <span class="at">estimator =</span> <span class="st">&quot;MLR&quot;</span>,</span>
+<span id="cb4-12"><a href="#cb4-12" tabindex="-1"></a>  <span class="at">fixed.x =</span> <span class="cn">FALSE</span>, <span class="at">conditional.x =</span> <span class="cn">FALSE</span></span>
+<span id="cb4-13"><a href="#cb4-13" tabindex="-1"></a>)</span>
+<span id="cb4-14"><a href="#cb4-14" tabindex="-1"></a></span>
+<span id="cb4-15"><a href="#cb4-15" tabindex="-1"></a><span class="fu">pvalues</span>(fit_random_x, <span class="fu">c</span>(<span class="st">&quot;SB&quot;</span>, <span class="st">&quot;SS&quot;</span>, <span class="st">&quot;PEBA2&quot;</span>))</span>
+<span id="cb4-16"><a href="#cb4-16" tabindex="-1"></a><span class="co">#&gt;     sb_ml     ss_ml  peba2_ml </span></span>
+<span id="cb4-17"><a href="#cb4-17" tabindex="-1"></a><span class="co">#&gt; 0.6776279 0.6772337 0.6775772 </span></span>
+<span id="cb4-18"><a href="#cb4-18" tabindex="-1"></a><span class="co">#&gt; estimator: ML (MLR) (FIML) | data: continuous | information: observed | df: 2 | FIML convention: observed</span></span></code></pre></div>
+<p>Because <code>ageyr</code> belongs to the joint model, its missing
+values are handled by FIML too. Calling a predictor random is still a
+modeling decision. If <code>ageyr</code> should instead be treated as a
+fixed design variable, this example is not a substitute for a
+conditional analysis.</p>
+</div>
+<div id="keep-the-two-information-choices-separate" class="section level2">
+<h2>Keep the two information choices separate</h2>
+<p>Two similarly named controls do different jobs:</p>
+<ol style="list-style-type: decimal">
+<li>lavaan’s <code>information</code> fit option selects the model
+information stored and used for lavaan’s own inference.</li>
+<li><code>fiml.convention</code> selects the information matrices that
+<code>semTests</code> uses for its reference distribution.</li>
+</ol>
+<p>The <code>semTests</code> default, <code>&quot;observed&quot;</code>, uses
+observed saturated and observed model information throughout.
+<code>semTests</code> requests these matrices explicitly. A lavaan fit
+created with expected information therefore keeps the same
+observed-convention result.</p>
+<p>Choose <code>&quot;lavaan&quot;</code> when the goal is compatibility with
+lavaan’s own robust construction. For one model, it reproduces
+<code>lavInspect(fit, &quot;UGamma&quot;)</code>. For a nested pair, it reproduces
+lavaan’s public Satorra-2000 construction. In that compatibility path,
+<code>information = &quot;expected&quot;</code> controls the model-information
+part of the calculation.</p>
+</div>
+<div id="why-observed-information-is-the-default" class="section level2">
+<h2>Why observed information is the default</h2>
+<p>Expected information can be inconsistent under general MAR (Kenward
+and Molenberghs, 1998). Observed information reflects the realized
+missingness patterns and sample curvature. Savalei (2010) and Savalei
+and Rosseel (2022) work through the consequences for SEM. The choice can
+matter in finite samples, so we checked it with a large simulation.</p>
+<p>The study crossed:</p>
+<ul>
+<li>multivariate normal and elliptical <span class="math inline">\(t_5\)</span> data</li>
+<li>a correct two-factor CFA and a model omitting a 0.25
+cross-loading</li>
+<li>complete data, 30% MCAR, and 30% MAR</li>
+<li><span class="math inline">\(N = 150, 300, 600,\)</span> and <span class="math inline">\(1200\)</span></li>
+</ul>
+<p>We followed the interval coverage of one free loading and the factor
+covariance. Six standard-error recipes combined three information
+choices with either a model-based covariance or an empirical-score
+sandwich covariance (Yuan &amp; Bentler, 2000).</p>
+<table>
+<caption>Mean 95% coverage across sample sizes, missingness mechanisms,
+and focal parameters. Misspecified cells use centered
+coverage.</caption>
+<colgroup>
+<col width="34%" />
+<col width="15%" />
+<col width="11%" />
+<col width="20%" />
+<col width="16%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="left">Method</th>
+<th align="right">Correct, normal</th>
+<th align="right">Correct, t5</th>
+<th align="right">Misspecified, normal</th>
+<th align="right">Misspecified, t5</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">Expected, model-based</td>
+<td align="right">94.48</td>
+<td align="right">79.41</td>
+<td align="right">92.10</td>
+<td align="right">75.21</td>
+</tr>
+<tr class="even">
+<td align="left">Expected + sandwich</td>
+<td align="right">94.13</td>
+<td align="right">92.45</td>
+<td align="right">91.53</td>
+<td align="right">89.28</td>
+</tr>
+<tr class="odd">
+<td align="left">Observed H1, model-based</td>
+<td align="right">94.67</td>
+<td align="right">79.98</td>
+<td align="right">92.72</td>
+<td align="right">76.38</td>
+</tr>
+<tr class="even">
+<td align="left">Observed H1 + sandwich</td>
+<td align="right">94.39</td>
+<td align="right">92.52</td>
+<td align="right">92.46</td>
+<td align="right">89.98</td>
+</tr>
+<tr class="odd">
+<td align="left">Full observed Hessian, model-based</td>
+<td align="right">94.73</td>
+<td align="right">80.14</td>
+<td align="right">93.46</td>
+<td align="right">77.51</td>
+</tr>
+<tr class="even">
+<td align="left">Full observed Hessian + sandwich</td>
+<td align="right">94.72</td>
+<td align="right">93.64</td>
+<td align="right">94.53</td>
+<td align="right">93.00</td>
+</tr>
+</tbody>
+</table>
+<p>The full observed Hessian with a sandwich covariance came closest to
+95% overall, with its advantage largest under heavy tails and
+misspecification, so <code>semTests</code> uses observed information by
+default. The study targets parameter interval coverage, not the null
+calibration of the goodness-of-fit p-values themselves, which have their
+own deterministic and seeded checks under <code>tools/</code>. The
+<code>&quot;lavaan&quot;</code> convention remains available when the goal is to
+reproduce lavaan’s spectrum.</p>
+</div>
+<div id="comparing-observed-and-expected-model-information" class="section level2">
+<h2>Comparing observed and expected model information</h2>
+<p>Fit the same model again, changing only lavaan’s model-information
+option:</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a>fit_expected <span class="ot">&lt;-</span> <span class="fu">cfa</span>(</span>
+<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a>  model, fiml_data,</span>
+<span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a>  <span class="at">missing =</span> <span class="st">&quot;fiml&quot;</span>,</span>
+<span id="cb5-4"><a href="#cb5-4" tabindex="-1"></a>  <span class="at">estimator =</span> <span class="st">&quot;MLR&quot;</span>,</span>
+<span id="cb5-5"><a href="#cb5-5" tabindex="-1"></a>  <span class="at">information =</span> <span class="st">&quot;expected&quot;</span></span>
+<span id="cb5-6"><a href="#cb5-6" tabindex="-1"></a>)</span>
+<span id="cb5-7"><a href="#cb5-7" tabindex="-1"></a></span>
+<span id="cb5-8"><a href="#cb5-8" tabindex="-1"></a><span class="fu">max</span>(<span class="fu">abs</span>(<span class="fu">coef</span>(fit_observed) <span class="sc">-</span> <span class="fu">coef</span>(fit_expected)))</span>
+<span id="cb5-9"><a href="#cb5-9" tabindex="-1"></a><span class="co">#&gt; [1] 0</span></span></code></pre></div>
+<p>The information option leaves the fitted parameters unchanged here.
+It can still change the reference distribution:</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a>tests <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&quot;SB&quot;</span>, <span class="st">&quot;SS&quot;</span>, <span class="st">&quot;PEBA4&quot;</span>)</span>
+<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a></span>
+<span id="cb6-3"><a href="#cb6-3" tabindex="-1"></a>comparison <span class="ot">&lt;-</span> <span class="fu">cbind</span>(</span>
+<span id="cb6-4"><a href="#cb6-4" tabindex="-1"></a>  <span class="at">observed_fit__observed_convention =</span> <span class="fu">as.numeric</span>(</span>
+<span id="cb6-5"><a href="#cb6-5" tabindex="-1"></a>    <span class="fu">pvalues</span>(fit_observed, tests, <span class="at">fiml.convention =</span> <span class="st">&quot;observed&quot;</span>)</span>
+<span id="cb6-6"><a href="#cb6-6" tabindex="-1"></a>  ),</span>
+<span id="cb6-7"><a href="#cb6-7" tabindex="-1"></a>  <span class="at">observed_fit__lavaan_convention =</span> <span class="fu">as.numeric</span>(</span>
+<span id="cb6-8"><a href="#cb6-8" tabindex="-1"></a>    <span class="fu">pvalues</span>(fit_observed, tests, <span class="at">fiml.convention =</span> <span class="st">&quot;lavaan&quot;</span>)</span>
+<span id="cb6-9"><a href="#cb6-9" tabindex="-1"></a>  ),</span>
+<span id="cb6-10"><a href="#cb6-10" tabindex="-1"></a>  <span class="at">expected_fit__observed_convention =</span> <span class="fu">as.numeric</span>(</span>
+<span id="cb6-11"><a href="#cb6-11" tabindex="-1"></a>    <span class="fu">pvalues</span>(fit_expected, tests, <span class="at">fiml.convention =</span> <span class="st">&quot;observed&quot;</span>)</span>
+<span id="cb6-12"><a href="#cb6-12" tabindex="-1"></a>  ),</span>
+<span id="cb6-13"><a href="#cb6-13" tabindex="-1"></a>  <span class="at">expected_fit__lavaan_convention =</span> <span class="fu">as.numeric</span>(</span>
+<span id="cb6-14"><a href="#cb6-14" tabindex="-1"></a>    <span class="fu">pvalues</span>(fit_expected, tests, <span class="at">fiml.convention =</span> <span class="st">&quot;lavaan&quot;</span>)</span>
+<span id="cb6-15"><a href="#cb6-15" tabindex="-1"></a>  )</span>
+<span id="cb6-16"><a href="#cb6-16" tabindex="-1"></a>)</span>
+<span id="cb6-17"><a href="#cb6-17" tabindex="-1"></a><span class="fu">rownames</span>(comparison) <span class="ot">&lt;-</span> tests</span>
+<span id="cb6-18"><a href="#cb6-18" tabindex="-1"></a><span class="fu">format</span>(comparison, <span class="at">scientific =</span> <span class="cn">TRUE</span>, <span class="at">digits =</span> <span class="dv">4</span>)</span>
+<span id="cb6-19"><a href="#cb6-19" tabindex="-1"></a><span class="co">#&gt;       observed_fit__observed_convention observed_fit__lavaan_convention</span></span>
+<span id="cb6-20"><a href="#cb6-20" tabindex="-1"></a><span class="co">#&gt; SB    &quot;2.442e-08&quot;                       &quot;1.699e-08&quot;                    </span></span>
+<span id="cb6-21"><a href="#cb6-21" tabindex="-1"></a><span class="co">#&gt; SS    &quot;1.019e-07&quot;                       &quot;6.115e-07&quot;                    </span></span>
+<span id="cb6-22"><a href="#cb6-22" tabindex="-1"></a><span class="co">#&gt; PEBA4 &quot;6.558e-08&quot;                       &quot;1.977e-07&quot;                    </span></span>
+<span id="cb6-23"><a href="#cb6-23" tabindex="-1"></a><span class="co">#&gt;       expected_fit__observed_convention expected_fit__lavaan_convention</span></span>
+<span id="cb6-24"><a href="#cb6-24" tabindex="-1"></a><span class="co">#&gt; SB    &quot;2.442e-08&quot;                       &quot;6.648e-08&quot;                    </span></span>
+<span id="cb6-25"><a href="#cb6-25" tabindex="-1"></a><span class="co">#&gt; SS    &quot;1.019e-07&quot;                       &quot;5.204e-07&quot;                    </span></span>
+<span id="cb6-26"><a href="#cb6-26" tabindex="-1"></a><span class="co">#&gt; PEBA4 &quot;6.558e-08&quot;                       &quot;2.728e-07&quot;</span></span></code></pre></div>
+<p>The two observed-convention columns agree because
+<code>semTests</code> explicitly requests observed information. The
+lavaan-convention columns can differ because that path respects the
+model-information choice stored in the fit.</p>
+<p>Observed information reflects the realized missingness patterns and
+sample curvature. Expected information averages curvature under the
+fitted model. They can be close in well-behaved settings. Missingness
+and non-normality can pull them apart. <code>semTests</code> keeps the
+convention visible in both the function call and the result footer.</p>
+</div>
+<div id="nested-fiml-comparison" class="section level2">
+<h2>Nested FIML comparison</h2>
+<p>For nested models, both fits must use the same raw observations and
+missingness mask:</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a>constrained <span class="ot">&lt;-</span> <span class="st">&quot;</span></span>
+<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a><span class="st">  visual  =~ x1 + a*x2 + a*x3</span></span>
+<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a><span class="st">  textual =~ x4 + b*x5 + b*x6</span></span>
+<span id="cb7-4"><a href="#cb7-4" tabindex="-1"></a><span class="st">  speed   =~ x7 + x8 + x9</span></span>
+<span id="cb7-5"><a href="#cb7-5" tabindex="-1"></a><span class="st">&quot;</span></span>
+<span id="cb7-6"><a href="#cb7-6" tabindex="-1"></a></span>
+<span id="cb7-7"><a href="#cb7-7" tabindex="-1"></a>m1 <span class="ot">&lt;-</span> <span class="fu">cfa</span>(</span>
+<span id="cb7-8"><a href="#cb7-8" tabindex="-1"></a>  model, fiml_data,</span>
+<span id="cb7-9"><a href="#cb7-9" tabindex="-1"></a>  <span class="at">missing =</span> <span class="st">&quot;fiml&quot;</span>, <span class="at">estimator =</span> <span class="st">&quot;MLR&quot;</span></span>
+<span id="cb7-10"><a href="#cb7-10" tabindex="-1"></a>)</span>
+<span id="cb7-11"><a href="#cb7-11" tabindex="-1"></a>m0 <span class="ot">&lt;-</span> <span class="fu">cfa</span>(</span>
+<span id="cb7-12"><a href="#cb7-12" tabindex="-1"></a>  constrained, fiml_data,</span>
+<span id="cb7-13"><a href="#cb7-13" tabindex="-1"></a>  <span class="at">missing =</span> <span class="st">&quot;fiml&quot;</span>, <span class="at">estimator =</span> <span class="st">&quot;MLR&quot;</span></span>
+<span id="cb7-14"><a href="#cb7-14" tabindex="-1"></a>)</span></code></pre></div>
+<p>The default delta map works with the local model derivatives and
+tolerates a wider range of equivalent parameterizations. The exact map
+uses the literal parameter restrictions and requires both fits to share
+the same underlying set of free parameters:</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a>nested_tests <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&quot;SB&quot;</span>, <span class="st">&quot;SS&quot;</span>, <span class="st">&quot;PEBA2&quot;</span>)</span>
+<span id="cb8-2"><a href="#cb8-2" tabindex="-1"></a>nested <span class="ot">&lt;-</span> <span class="fu">cbind</span>(</span>
+<span id="cb8-3"><a href="#cb8-3" tabindex="-1"></a>  <span class="at">observed_delta =</span> <span class="fu">as.numeric</span>(<span class="fu">pvalues_nested</span>(</span>
+<span id="cb8-4"><a href="#cb8-4" tabindex="-1"></a>    m0, m1,</span>
+<span id="cb8-5"><a href="#cb8-5" tabindex="-1"></a>    <span class="at">tests =</span> nested_tests,</span>
+<span id="cb8-6"><a href="#cb8-6" tabindex="-1"></a>    <span class="at">A.method =</span> <span class="st">&quot;delta&quot;</span>, <span class="at">fiml.convention =</span> <span class="st">&quot;observed&quot;</span></span>
+<span id="cb8-7"><a href="#cb8-7" tabindex="-1"></a>  )),</span>
+<span id="cb8-8"><a href="#cb8-8" tabindex="-1"></a>  <span class="at">observed_exact =</span> <span class="fu">as.numeric</span>(<span class="fu">pvalues_nested</span>(</span>
+<span id="cb8-9"><a href="#cb8-9" tabindex="-1"></a>    m0, m1,</span>
+<span id="cb8-10"><a href="#cb8-10" tabindex="-1"></a>    <span class="at">tests =</span> nested_tests,</span>
+<span id="cb8-11"><a href="#cb8-11" tabindex="-1"></a>    <span class="at">A.method =</span> <span class="st">&quot;exact&quot;</span>, <span class="at">fiml.convention =</span> <span class="st">&quot;observed&quot;</span></span>
+<span id="cb8-12"><a href="#cb8-12" tabindex="-1"></a>  )),</span>
+<span id="cb8-13"><a href="#cb8-13" tabindex="-1"></a>  <span class="at">lavaan_delta =</span> <span class="fu">as.numeric</span>(<span class="fu">pvalues_nested</span>(</span>
+<span id="cb8-14"><a href="#cb8-14" tabindex="-1"></a>    m0, m1,</span>
+<span id="cb8-15"><a href="#cb8-15" tabindex="-1"></a>    <span class="at">tests =</span> nested_tests,</span>
+<span id="cb8-16"><a href="#cb8-16" tabindex="-1"></a>    <span class="at">A.method =</span> <span class="st">&quot;delta&quot;</span>, <span class="at">fiml.convention =</span> <span class="st">&quot;lavaan&quot;</span></span>
+<span id="cb8-17"><a href="#cb8-17" tabindex="-1"></a>  ))</span>
+<span id="cb8-18"><a href="#cb8-18" tabindex="-1"></a>)</span>
+<span id="cb8-19"><a href="#cb8-19" tabindex="-1"></a><span class="fu">rownames</span>(nested) <span class="ot">&lt;-</span> nested_tests</span>
+<span id="cb8-20"><a href="#cb8-20" tabindex="-1"></a><span class="fu">format</span>(nested, <span class="at">scientific =</span> <span class="cn">TRUE</span>, <span class="at">digits =</span> <span class="dv">4</span>)</span>
+<span id="cb8-21"><a href="#cb8-21" tabindex="-1"></a><span class="co">#&gt;       observed_delta observed_exact lavaan_delta</span></span>
+<span id="cb8-22"><a href="#cb8-22" tabindex="-1"></a><span class="co">#&gt; SB    &quot;3.392e-02&quot;    &quot;4.335e-02&quot;    &quot;1.530e-02&quot; </span></span>
+<span id="cb8-23"><a href="#cb8-23" tabindex="-1"></a><span class="co">#&gt; SS    &quot;3.551e-02&quot;    &quot;4.566e-02&quot;    &quot;1.752e-02&quot; </span></span>
+<span id="cb8-24"><a href="#cb8-24" tabindex="-1"></a><span class="co">#&gt; PEBA2 &quot;3.431e-02&quot;    &quot;4.384e-02&quot;    &quot;1.609e-02&quot;</span></span></code></pre></div>
+<p>The delta default is the more flexible choice when equivalent models
+have different parameter tables. Use exact when the hypothesis is
+naturally written as a literal restriction on one shared set of free
+parameters.</p>
+</div>
+<div id="fiml-with-several-groups" class="section level2">
+<h2>FIML with several groups</h2>
+<p>Grouped models use the same interface. Here we compare a configural
+model with one that holds the factor loadings equal across schools:</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a>mg1 <span class="ot">&lt;-</span> <span class="fu">cfa</span>(</span>
+<span id="cb9-2"><a href="#cb9-2" tabindex="-1"></a>  model, fiml_data,</span>
+<span id="cb9-3"><a href="#cb9-3" tabindex="-1"></a>  <span class="at">group =</span> <span class="st">&quot;school&quot;</span>,</span>
+<span id="cb9-4"><a href="#cb9-4" tabindex="-1"></a>  <span class="at">missing =</span> <span class="st">&quot;fiml&quot;</span>, <span class="at">estimator =</span> <span class="st">&quot;MLR&quot;</span></span>
+<span id="cb9-5"><a href="#cb9-5" tabindex="-1"></a>)</span>
+<span id="cb9-6"><a href="#cb9-6" tabindex="-1"></a>mg0 <span class="ot">&lt;-</span> <span class="fu">cfa</span>(</span>
+<span id="cb9-7"><a href="#cb9-7" tabindex="-1"></a>  model, fiml_data,</span>
+<span id="cb9-8"><a href="#cb9-8" tabindex="-1"></a>  <span class="at">group =</span> <span class="st">&quot;school&quot;</span>, <span class="at">group.equal =</span> <span class="st">&quot;loadings&quot;</span>,</span>
+<span id="cb9-9"><a href="#cb9-9" tabindex="-1"></a>  <span class="at">missing =</span> <span class="st">&quot;fiml&quot;</span>, <span class="at">estimator =</span> <span class="st">&quot;MLR&quot;</span></span>
+<span id="cb9-10"><a href="#cb9-10" tabindex="-1"></a>)</span>
+<span id="cb9-11"><a href="#cb9-11" tabindex="-1"></a></span>
+<span id="cb9-12"><a href="#cb9-12" tabindex="-1"></a><span class="fu">pvalues</span>(mg1, <span class="fu">c</span>(<span class="st">&quot;SB&quot;</span>, <span class="st">&quot;SS&quot;</span>, <span class="st">&quot;PEBA4&quot;</span>))</span>
+<span id="cb9-13"><a href="#cb9-13" tabindex="-1"></a><span class="co">#&gt;        sb_ml        ss_ml     peba4_ml </span></span>
+<span id="cb9-14"><a href="#cb9-14" tabindex="-1"></a><span class="co">#&gt; 5.066665e-07 4.715279e-06 1.618893e-06 </span></span>
+<span id="cb9-15"><a href="#cb9-15" tabindex="-1"></a><span class="co">#&gt; estimator: ML (MLR) (FIML) | data: continuous | information: observed | df: 48 | FIML convention: observed</span></span>
+<span id="cb9-16"><a href="#cb9-16" tabindex="-1"></a><span class="fu">pvalues_nested</span>(mg0, mg1, <span class="at">tests =</span> <span class="fu">c</span>(<span class="st">&quot;SB&quot;</span>, <span class="st">&quot;SS&quot;</span>, <span class="st">&quot;PEBA4&quot;</span>))</span>
+<span id="cb9-17"><a href="#cb9-17" tabindex="-1"></a><span class="co">#&gt;     sb_ml     ss_ml  peba4_ml </span></span>
+<span id="cb9-18"><a href="#cb9-18" tabindex="-1"></a><span class="co">#&gt; 0.2253208 0.2320262 0.2254550 </span></span>
+<span id="cb9-19"><a href="#cb9-19" tabindex="-1"></a><span class="co">#&gt; estimator: ML (MLR) (FIML) | data: continuous | information: observed | df: 6 | FIML convention: observed | nested (method 2000, A.method delta)</span></span></code></pre></div>
+<p>The groups may have different sample sizes and missingness patterns.
+The two fits in a nested comparison still need the same observations and
+missingness mask within each group.</p>
+</div>
+<div id="what-to-report" class="section level2">
+<h2>What to report</h2>
+<p>A reproducible FIML analysis should report:</p>
+<ul>
+<li>the missingness pattern and its substantive justification</li>
+<li>lavaan’s estimator and <code>information</code> option</li>
+<li>the <code>semTests</code> <code>fiml.convention</code></li>
+<li>the nested <code>A.method</code>, when applicable</li>
+<li>the requested p-value method and base statistic</li>
+</ul>
+<p>The result footer and <code>attr(result, &quot;semtests&quot;)</code> retain
+these <code>semTests</code> choices with the returned p-values.</p>
+</div>
+<div id="references" class="section level2">
+<h2>References</h2>
+<p>Kenward, M. G., &amp; Molenberghs, G. (1998). Likelihood based
+frequentist inference when data are missing at random. <em>Statistical
+Science</em>, 13(3), 236–247. <a href="https://doi.org/10.1214/ss/1028905886" class="uri">https://doi.org/10.1214/ss/1028905886</a></p>
+<p>Savalei, V. (2010). Expected versus observed information in SEM with
+incomplete normal and nonnormal data. <em>Psychological Methods</em>,
+15(4), 352–367. <a href="https://doi.org/10.1037/a0020143" class="uri">https://doi.org/10.1037/a0020143</a></p>
+<p>Savalei, V., &amp; Rosseel, Y. (2022). Computational options for
+standard errors and test statistics with incomplete normal and nonnormal
+data in SEM. <em>Structural Equation Modeling</em>, 29(2), 163–181. <a href="https://doi.org/10.1080/10705511.2021.1877548" class="uri">https://doi.org/10.1080/10705511.2021.1877548</a></p>
+<p>Satorra, A. (2000). Scaled and adjusted restricted tests in
+multi-sample analysis of moment structures. In R. D. H. Heijmans, D. S.
+G. Pollock, &amp; A. Satorra (Eds.), <em>Innovations in Multivariate
+Statistical Analysis</em> (pp. 233–247). Kluwer Academic. <a href="https://doi.org/10.1007/978-1-4615-4603-0_17" class="uri">https://doi.org/10.1007/978-1-4615-4603-0_17</a></p>
+<p>Yuan, K.-H., &amp; Bentler, P. M. (2000). Three likelihood-based
+methods for mean and covariance structure analysis with nonnormal
+missing data. <em>Sociological Methodology</em>, 30, 165–200. <a href="https://doi.org/10.1111/0081-1750.00078" class="uri">https://doi.org/10.1111/0081-1750.00078</a></p>
+</div>
+
+
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

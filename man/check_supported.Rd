@@ -4,7 +4,7 @@
 \alias{check_supported}
 \title{Reject a fit whose configuration is outside the supported surface.}
 \usage{
-check_supported(fit)
+check_supported(fit, arg = "object")
 }
 \arguments{
 \item{fit}{A fitted \code{lavaan} object.}
@@ -15,10 +15,11 @@ check_supported(fit)
 \description{
 The single entry-level gate for \code{\link[=pvalues]{pvalues()}}. It admits exactly the
 configurations documented in \link{semTests-support} -- the supported continuous
-and categorical estimators, complete data, and single-group FIML -- and stops
+and categorical estimators, complete data, and FIML with one or several
+groups -- and stops
 with a pointer to \code{?semTests-support} otherwise. Statistic- and gamma-specific
 rejections (the normal-theory-only RLS statistic and \code{UG} gamma) depend on the
-parsed test string and stay with the code that consumes them (\code{make_chisqs()},
-\code{\link[=gamma]{gamma()}}); this gate is purely fit-shape.
+parsed test string and stay with the code that consumes them (\code{make_chisqs()}
+and \code{\link[=gamma_matrices]{gamma_matrices()}}). This gate checks the shape of the fit.
 }
 \keyword{internal}

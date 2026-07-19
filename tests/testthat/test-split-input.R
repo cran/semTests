@@ -12,17 +12,26 @@ test_that("split_input parses the two-part chi-square form", {
 })
 
 test_that("split_input rejects unrecognised test strings", {
-  expect_error(split_input("garbage"), "Invalid")
-})
-
-test_that("default() returns 2 for empty input and the number otherwise", {
-  expect_equal(default(""), 2)
-  expect_equal(default("5"), 5)
-})
-
-test_that("nanull() maps NA to NULL and passes other values through", {
-  expect_null(nanull(NA))
-  expect_equal(nanull(3), 3)
+  expect_error(
+    split_input(c("sb", "ss")),
+    "requires exactly one test specification",
+    class = "semTests_error_invalid_tests"
+  )
+  expect_error(
+    split_input("garbage"),
+    "Unknown test family",
+    class = "semTests_error_invalid_tests"
+  )
+  expect_error(
+    split_input("sb_nope"),
+    "Invalid test specification",
+    class = "semTests_error_invalid_tests"
+  )
+  expect_error(
+    split_input("peba0"),
+    "positive integer",
+    class = "semTests_error_invalid_tests"
+  )
 })
 
 test_that("pols_pvalue handles a single eigenvalue", {

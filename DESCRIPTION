@@ -1,18 +1,16 @@
 Package: semTests
 Type: Package
 Title: Robust Test Statistics for Structural Equation Models
-Description: Supports penalized eigenvalue block-averaging and penalized
-    regression p-values (Foldnes, Moss, Grønneberg, 2024)
-    <doi:10.1080/10705511.2024.2372028>, including their extension to nested
-    model comparison (Foldnes, Grønneberg, Moss, 2026)
-    <doi:10.3758/s13428-026-02968-4>, as well as traditional p-values such as
-    Satorra-Bentler. All p-values can be calculated using unbiased or biased
-    gamma estimates (Du, Bentler, 2022) <doi:10.1080/10705511.2022.2063870> and
-    two choices of chi square statistics. The tests apply to any
-    minimum-discrepancy estimator -- ML, GLS, ULS, and categorical WLSMV/DWLS --
-    with experimental support for full-information maximum-likelihood (FIML) fits
-    under missing data.
-Version: 0.9.0
+Description: Computes robust p-values for overall fit and nested comparisons of
+    structural equation models fitted with 'lavaan'. Implements penalized
+    eigenvalue block averaging and penalized regression (Foldnes, Moss,
+    Grønneberg, 2025) <doi:10.1080/10705511.2024.2372028>, including their
+    extension to nested models (Foldnes, Grønneberg, Moss, 2026)
+    <doi:10.3758/s13428-026-02968-4>, alongside familiar corrections such as
+    Satorra-Bentler. Supported settings include complete-data ML, GLS, and ULS,
+    categorical DWLS and ULS, and full-information maximum likelihood with one
+    or several groups.
+Version: 1.0.0
 Authors@R: c(
     person(given="Jonas", 
            family="Moss",
@@ -33,17 +31,17 @@ License: GPL (>= 3)
 Encoding: UTF-8
 URL: https://github.com/JonasMoss/semTests
 Depends: R (>= 3.5.0)
-Imports: lavaan (>= 0.6-16), methods
-Suggests: testthat (>= 3.0.0), covr, xml2, knitr, rmarkdown
+Imports: lavaan (>= 0.7-2), methods
+Suggests: testthat (>= 3.0.0), knitr, rmarkdown
 VignetteBuilder: knitr
 Config/testthat/edition: 3
 Config/roxygen2/version: 8.0.0
 NeedsCompilation: no
-Packaged: 2026-06-09 12:18:33 UTC; jonas
+Packaged: 2026-07-19 11:49:01 UTC; jonas
 Author: Jonas Moss [aut, cre] (ORCID: <https://orcid.org/0000-0002-6876-6964>),
   Njål Foldnes [ctb] (ORCID: <https://orcid.org/0000-0001-6889-6067>),
   Steffen Grønneberg [ctb] (ORCID:
     <https://orcid.org/0000-0003-2785-6530>)
 Maintainer: Jonas Moss <jonas.moss.statistics@gmail.com>
 Repository: CRAN
-Date/Publication: 2026-06-09 14:00:02 UTC
+Date/Publication: 2026-07-19 15:40:02 UTC

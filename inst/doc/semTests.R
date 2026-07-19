@@ -5,7 +5,6 @@ knitr::opts_chunk$set(
   message = FALSE,
   warning = FALSE
 )
-options(warn = -1)
 
 ## ----setup--------------------------------------------------------------------
 library("semTests")
@@ -33,8 +32,10 @@ pvalues_nested(m0, m1)
 gls <- cfa(model, HolzingerSwineford1939, estimator = "GLS")
 pvalues(gls, "pEBA4")
 
-uls <- cfa(model, HolzingerSwineford1939, estimator = "ULS",
-           test = "satorra.bentler")
+uls <- cfa(model, HolzingerSwineford1939,
+  estimator = "ULS",
+  test = "satorra.bentler"
+)
 pvalues(uls, "pEBA4")
 
 ## ----fiml---------------------------------------------------------------------
@@ -43,4 +44,14 @@ set.seed(1)
 HS$x1[sample(nrow(HS), 60)] <- NA
 fit_fiml <- cfa(model, HS, missing = "fiml", estimator = "MLR")
 pvalues(fit_fiml)
+
+## ----categorical--------------------------------------------------------------
+HSord <- HolzingerSwineford1939
+ordered_names <- paste0("x", 1:9)
+HSord[ordered_names] <- lapply(
+  HSord[ordered_names],
+  function(x) ordered(cut(x, 3))
+)
+fit_ordinal <- cfa(model, HSord, ordered = ordered_names)
+pvalues(fit_ordinal, c("SB", "SS", "pEBA4"))
 

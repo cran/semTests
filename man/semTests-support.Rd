@@ -4,33 +4,36 @@
 \alias{semTests-support}
 \title{Supported estimators, data types, and configurations}
 \description{
-The authoritative list of what \code{\link[=pvalues]{pvalues()}} and \code{\link[=pvalues_nested]{pvalues_nested()}} support.
-The eigenvalue-based p-values target the limiting null law of the test
-statistic -- a weighted sum of chi-squares -- which holds for any
-minimum-discrepancy estimator, so the tests are not specific to normal-theory
-ML. This page is the single source of truth: anything not listed here is
-refused at the entry point (see \code{\link[=check_supported]{check_supported()}}), and the test suite is
-written against it.
+Use this page to check what \code{\link[=pvalues]{pvalues()}} and \code{\link[=pvalues_nested]{pvalues_nested()}} support.
+The eigenvalue-based p-values target a limiting null law that is a weighted
+sum of chi-squares. This result holds for any minimum-discrepancy estimator
+and therefore includes estimators beyond normal-theory ML. The tables below
+give the supported combinations. Configurations outside them are refused at
+the entry point (see \code{\link[=check_supported]{check_supported()}}), and the test suite follows the
+same boundary.
 }
 \details{
-\subsection{Single-model (\code{pvalues()})}{\tabular{lllll}{
-   Estimator \tab Data \tab Groups \tab Missing \tab Status \cr
-   ML / MLM / MLR \tab continuous \tab single or multi \tab complete \tab supported \cr
-   GLS \tab continuous \tab single or multi \tab complete \tab supported \cr
-   ULS \tab continuous \tab single or multi \tab complete \tab supported \cr
-   ML / MLR (FIML) \tab continuous \tab single only \tab FIML \tab supported \cr
-   WLSMV / DWLS \tab categorical \tab single or multi \tab complete \tab supported \cr
-   WLS (ADF) \tab continuous \tab single \tab complete \tab degenerate (no-op) \cr
+\subsection{Single-model (\code{pvalues()})}{\tabular{llllll}{
+   Estimator \tab Data \tab Groups \tab Missing \tab Availability \tab Stability \cr
+   ML / MLM / MLR \tab continuous \tab single or multi \tab complete \tab available \tab stable \cr
+   GLS \tab continuous \tab single or multi \tab complete \tab available \tab stable \cr
+   ULS \tab continuous \tab single or multi \tab complete \tab available \tab stable \cr
+   ML / MLR (FIML) \tab continuous \tab single or multi \tab FIML \tab available \tab stable \cr
+   DWLS family \tab ordered/mixed \tab single or multi \tab listwise/pairwise \tab available \tab stable \cr
+   ULS family \tab ordered/mixed \tab single or multi \tab listwise/pairwise \tab available \tab stable \cr
+   WLS (ADF) \tab continuous \tab single or multi \tab complete \tab rejected \tab -- \cr
+   WLS (ADF) \tab ordered/mixed \tab single or multi \tab listwise/pairwise \tab rejected \tab -- \cr
 }
 
 }
 
-\subsection{Nested (\code{pvalues_nested()})}{\tabular{lllllll}{
-   Estimators \tab Data \tab Groups \tab Missing \tab Method \tab A.method \tab Status \cr
-   ML/MLM/MLR, GLS, ULS \tab continuous \tab single or multi \tab complete \tab 2000 or 2001 \tab -- \tab supported \cr
-   ML / MLR (FIML) \tab continuous \tab single only \tab FIML (both fits) \tab 2000 only \tab exact or delta \tab supported \cr
-   WLSMV / DWLS \tab categorical \tab any \tab any \tab -- \tab -- \tab rejected \cr
-   any \tab continuous \tab -- \tab mixed / non-FIML \tab -- \tab -- \tab rejected \cr
+\subsection{Nested (\code{pvalues_nested()})}{\tabular{llllllll}{
+   Estimators \tab Data \tab Groups \tab Missing \tab Method \tab A.method \tab Availability \tab Stability \cr
+   ML/MLM/MLR \tab continuous \tab single or multi \tab complete \tab 2000 \tab -- \tab available \tab stable \cr
+   GLS, ULS \tab continuous \tab single or multi \tab complete \tab 2000 \tab -- \tab available \tab stable \cr
+   ML / MLR (FIML) \tab continuous \tab single or multi \tab FIML (both fits) \tab 2000 only \tab exact or delta \tab available \tab stable \cr
+   DWLS/ULS families \tab ordered/mixed \tab single or multi \tab listwise/pairwise \tab 2000 only \tab delta only \tab available \tab stable \cr
+   any \tab continuous \tab -- \tab mixed / non-FIML \tab -- \tab -- \tab rejected \tab -- \cr
 }
 
 }
@@ -38,46 +41,112 @@ written against it.
 \subsection{Stability}{
 
 The classical normal-theory ML path (continuous, complete data) is the mature,
-paper-backed core and is stable. Support for the other estimators (GLS, ULS,
-categorical WLSMV/DWLS), for FIML missing-data fits, and for nested comparison
-under FIML is \strong{experimental} as of 0.9.0: the methodology rests on the
-references but the implementation surface is newer and less Monte-Carlo-vetted,
-so the API and numerical details may change. Everything in the tables above is
-validated and tested; configurations outside them are refused at the entry
-point.
+paper-backed core. The other supported estimators -- GLS, ULS, categorical
+DWLS/ULS fits, FIML missing-data fits, and their nested comparisons -- are
+also marked stable: each is validated to numerical tolerance against an
+independent implementation (magmaan) across a simulation battery, in addition
+to the deterministic implementation tests every available row carries. The
+\code{fiml.convention = "lavaan"} option reproduces lavaan's own spectrum for
+compatibility rather than as an independently validated construction.
+Configurations outside the tables are refused at the entry point.
+}
+
+\subsection{Observed exogenous covariates}{
+
+Observed exogenous predictors are supported when they are modeled jointly
+with the other variables. In lavaan, request this random-x analysis with
+\code{fixed.x = FALSE} and \code{conditional.x = FALSE}. The independent validation
+suite covers continuous ML, GLS, ULS, FIML, and mixed categorical DWLS in
+this setting, for single models and nested comparisons.
+
+Fixed or conditional observed exogenous predictors are currently refused.
+Their reference distribution conditions on the realized covariate design
+and needs a separate saturated-model projection. If a covariate is intended
+to be fixed, keep that scientific choice and do not silently change it to
+random merely to pass the software check.
+}
+
+\subsection{Fit quality and nested comparability}{
+
+Both entry points require converged lavaan fits and warn when lavaan's
+post-estimation check reports an inadmissible solution. Nested comparisons
+additionally require the same requested estimator, fitting conventions,
+observed variables, groups, sample sizes, raw data, and missingness mask.
+These checks establish comparability. The scientific argument that one model
+is genuinely nested within the other still belongs in the analysis.
+
+The constrained model belongs in \code{m0}. If the models are supplied in reverse
+df order, semTests warns and swaps them. Only the Satorra-2000 reduction is
+available. \code{method = "2001"} has been withdrawn because it performs poorly.
 }
 
 \subsection{Statistic and gamma options}{
 
-Test names have the form \verb{(test)_(ug?)_(ml|rls?)} (e.g. \code{"SB_UG_RLS"}); see
-\code{\link[=pvalues]{pvalues()}} for the test families. Two of the options are defined only for the
-classical case:
+Test names use one of \code{TEST}, \code{TEST_UG}, \code{TEST_ML}, \code{TEST_RLS},
+\code{TEST_UG_ML}, or \code{TEST_UG_RLS} (e.g. \code{"SB_UG_RLS"}). See \code{\link[=pvalues]{pvalues()}} for the
+test families. Two of the options are defined only for the classical case:
 \itemize{
 \item The \strong{RLS} statistic (\code{browne.residual.nt.model}, Browne 1974) and the
 \strong{\code{UG}} (Du-Bentler) unbiased gamma are available \strong{only} for classical
-normal-theory ML: continuous, complete data, \code{estimator = "ML"}. Off that
-case they are undefined -- lavaan silently degrades RLS to ADF, and the
-Du-Bentler correction has no derivation -- so requesting them is refused.
-The standard statistic and the biased gamma are used instead.
+normal-theory ML with continuous, complete data, \code{estimator = "ML"},
+\code{fixed.x = FALSE}, and \code{conditional.x = FALSE}. lavaan degrades RLS to ADF
+elsewhere, and the Du-Bentler correction has no derivation for the other
+families or a fixed covariate design. \code{semTests} refuses either request and
+points you to the standard statistic and biased gamma.
+\item \strong{Categorical and mixed-indicator fits} use lavaan's biased inspected
+\code{UGamma} spectrum and unscaled estimator statistic directly. Supported
+estimator families are DWLS (including WLSMV/WLSM/WLSMVS) and ULS (including
+ULSMV). Nested comparison is restricted to \code{method = "2000"} and
+\code{A.method = "delta"}.
+\item \strong{Pairwise categorical missingness} means support for lavaan's pairwise
+sample-statistic and \code{UGamma} calculation. Pairwise deletion has its own
+missingness assumptions and does not provide FIML or generally MAR-valid
+inference.
 \item \strong{FIML} (missing data) uses the biased gamma and the standard statistic
-only; \code{UG} and \code{RLS} are refused. The missing-data spectrum is renormalised
-(see \code{\link[=rescale_missing]{rescale_missing()}}). FIML requires a single group, continuous data,
-and no fixed exogenous covariates, and -- because the inference rests on
-the observed information under MAR -- a fit with \code{information = "expected"}
-triggers a warning (see \code{\link[=warn_fiml_information]{warn_fiml_information()}}).
+only. \code{UG} and \code{RLS} are refused. FIML supports one or several groups with
+continuous data. Observed exogenous predictors are supported under joint
+random-x inference, using \code{fixed.x = FALSE} and \code{conditional.x = FALSE}.
+\code{fiml.convention = "observed"} (the default) uses observed saturated and
+model information, following the recommendation of Kenward and Molenberghs
+(1998), and is independently validated against magmaan. \code{"lavaan"}
+reproduces lavaan 0.7-2's inspected robust-test spectrum, including its
+expected H1 weight.
 }
 }
 
-\subsection{Why ADF/WLS is degenerate}{
+\subsection{Why full WLS/ADF is refused}{
 
-For full WLS (ADF) the model test statistic already uses the
-asymptotically-correct weight matrix, so its null distribution is the exact
-chi-square and the eigenvalue correction collapses to the identity: every
-p-value equals the ordinary \code{1 - pchisq(chisq, df)}. It is accepted but adds
-nothing.
+For full WLS (ADF), with continuous or categorical sample statistics, the
+fitting weight is already the inverse of the asymptotic moment covariance, so
+\code{UGamma} is a projector: its nonzero eigenvalues are all exactly one and the
+eigenvalue correction collapses to the identity. Every robust p-value would
+therefore equal the ordinary \code{1 - pchisq(chisq, df)}. Because the correction
+adds nothing, full WLS is refused at the entry point. Fit a DWLS/ULS family
+for a non-degenerate robust test, or read the standard chi-square directly.
 }
+}
+\references{
+Foldnes, N., Moss, J., & Grønneberg, S. (2025). Improved goodness of fit
+procedures for structural equation models. \emph{Structural Equation Modeling: A
+Multidisciplinary Journal}, 32(1), 1--13.
+\doi{10.1080/10705511.2024.2372028}
+
+Foldnes, N., Grønneberg, S., & Moss, J. (2026). Penalized eigenvalue block
+averaging: Extension to nested model comparison and Monte Carlo evaluations.
+\emph{Behavior Research Methods}, 58, article 107.
+\doi{10.3758/s13428-026-02968-4}
+
+Kenward, M. G., & Molenberghs, G. (1998). Likelihood based frequentist
+inference when data are missing at random. \emph{Statistical Science}, 13(3),
+236--247. \doi{10.1214/ss/1028905886}
+
+Satorra, A. (2000). Scaled and adjusted restricted tests in multi-sample
+analysis of moment structures. In R. D. H. Heijmans, D. S. G. Pollock, &
+A. Satorra (Eds.), \emph{Innovations in Multivariate Statistical Analysis}
+(pp. 233--247). Kluwer Academic.
+\doi{10.1007/978-1-4615-4603-0_17}
 }
 \seealso{
 \code{\link[=pvalues]{pvalues()}}, \code{\link[=pvalues_nested]{pvalues_nested()}}
 }
-\keyword{internal}
+\keyword{models}
