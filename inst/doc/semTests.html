@@ -12,7 +12,7 @@
 
 
 
-<title>Robust test statistics with semTests</title>
+<title>Getting started with semTests</title>
 
 <script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
 // be compatible with the behavior of Pandoc < 2.8).
@@ -337,211 +337,247 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 
 
 
-<h1 class="title toc-ignore">Robust test statistics with semTests</h1>
+<h1 class="title toc-ignore">Getting started with semTests</h1>
 
 
 
-<div id="introduction" class="section level2">
-<h2>Introduction</h2>
-<p><code>semTests</code> computes robust <em>p</em>-values for
-structural equation models fit with <a href="https://lavaan.ugent.be/"><code>lavaan</code></a>. The standard
-chi-square test of model fit can reject too often when the data are
-non-normal. Familiar corrections such as Satorra–Bentler help. The
-methods in this package keep more information about the shape of the
-reference distribution by using its estimated eigenvalues.</p>
-<p>For the mathematically curious, the reference distribution is a
-weighted sum <span class="math inline">\(\sum_j \lambda_j
-\chi^2_1\)</span>. You do not need to calculate any eigenvalues by hand.
-Fit the model in lavaan, then let <code>pvalues()</code> do that part.
-The same basic idea covers maximum likelihood, least squares,
-categorical models, and FIML.</p>
-<p>The penalized eigenvalue block-averaging (<code>pEBA</code>) and
-penalized regression (<code>pOLS</code>) methods were introduced by
-Foldnes, Moss, and Grønneberg (2025). Foldnes, Grønneberg, and Moss
-(2026) extended them to nested model comparison.</p>
+<div id="what-semtests-does" class="section level2">
+<h2>What semTests does</h2>
+<p><code>semTests</code> computes <em>p</em>-values for the chi-square
+tests of structural equation models fitted with <a href="https://lavaan.ugent.be/">lavaan</a>. When the data are not
+normal, the chi-square statistic <span class="math inline">\(T\)</span>
+does not have a chi-square distribution, not even in large samples. Its
+limit is a weighted sum of independent <span class="math inline">\(\chi^2_1\)</span> variables,</p>
+<p><span class="math display">\[
+T \xrightarrow{d} \sum_{j=1}^{d} \lambda_j Z_j^2,
+\qquad Z_1, \ldots, Z_d \sim N(0, 1),
+\]</span></p>
+<p>where <span class="math inline">\(d\)</span> is the degrees of
+freedom and <span class="math inline">\(\lambda_1, \ldots,
+\lambda_d\)</span> are the nonzero eigenvalues of <span class="math inline">\(U\Gamma\)</span>. Here <span class="math inline">\(\Gamma\)</span> is the asymptotic covariance
+matrix of the sample moments and <span class="math inline">\(U\)</span>
+depends on the model and the estimator. Under normality every <span class="math inline">\(\lambda_j\)</span> equals 1 and the chi-square
+reference is correct.</p>
+<p>The Satorra–Bentler correction matches the mean of this distribution,
+and the scaled-and-shifted correction matches its mean and variance.
+<code>semTests</code> estimates the eigenvalues and uses all of them.
+Single eigenvalue estimates are noisy, so the recommended methods shrink
+them toward their common mean: penalized eigenvalue block averaging
+(pEBA) for overall fit (Foldnes, Moss, and Grønneberg, 2025), and
+penalized use of all eigenvalues (<code>PALL</code>) for nested
+comparisons (Foldnes, Grønneberg, and Moss, 2026).</p>
+<p>The package has three entry points:</p>
+<ul>
+<li><code>pvalues()</code> tests the overall fit of one model.</li>
+<li><code>pvalues_nested()</code> compares two nested models.</li>
+<li><code>semtest()</code> computes score and criterion-difference tests
+of restrictions, including tests that remain valid when the larger model
+is misspecified.</li>
+</ul>
+<p>This vignette covers the first two for complete continuous data.</p>
+</div>
+<div id="overall-fit" class="section level2">
+<h2>Overall fit</h2>
 <div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="fu">library</span>(<span class="st">&quot;semTests&quot;</span>)</span>
-<span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a><span class="fu">library</span>(<span class="st">&quot;lavaan&quot;</span>)</span></code></pre></div>
+<span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a><span class="fu">library</span>(<span class="st">&quot;lavaan&quot;</span>)</span>
+<span id="cb1-3"><a href="#cb1-3" tabindex="-1"></a></span>
+<span id="cb1-4"><a href="#cb1-4" tabindex="-1"></a>model <span class="ot">&lt;-</span> <span class="st">&quot;</span></span>
+<span id="cb1-5"><a href="#cb1-5" tabindex="-1"></a><span class="st">  visual  =~ x1 + x2 + x3</span></span>
+<span id="cb1-6"><a href="#cb1-6" tabindex="-1"></a><span class="st">  textual =~ x4 + x5 + x6</span></span>
+<span id="cb1-7"><a href="#cb1-7" tabindex="-1"></a><span class="st">  speed   =~ x7 + x8 + x9</span></span>
+<span id="cb1-8"><a href="#cb1-8" tabindex="-1"></a><span class="st">&quot;</span></span>
+<span id="cb1-9"><a href="#cb1-9" tabindex="-1"></a>fit <span class="ot">&lt;-</span> <span class="fu">cfa</span>(model, HolzingerSwineford1939)</span>
+<span id="cb1-10"><a href="#cb1-10" tabindex="-1"></a><span class="fu">pvalues</span>(fit)</span>
+<span id="cb1-11"><a href="#cb1-11" tabindex="-1"></a><span class="co">#&gt;    peba4_rls </span></span>
+<span id="cb1-12"><a href="#cb1-12" tabindex="-1"></a><span class="co">#&gt; 5.165712e-07 </span></span>
+<span id="cb1-13"><a href="#cb1-13" tabindex="-1"></a><span class="co">#&gt; estimator: ML | data: continuous | information: expected | df: 24</span></span></code></pre></div>
+<p>The fit needs no robust lavaan test. When lavaan has not stored an
+estimate of <span class="math inline">\(\Gamma\)</span>,
+<code>semTests</code> computes one from the raw data. The line below the
+<em>p</em>-values records the estimator, the data type, the fit’s
+information option, and the degrees of freedom.
+<code>attr(result, &quot;semtests&quot;)</code> holds the full record.</p>
 </div>
-<div id="choose-a-focused-guide" class="section level2">
-<h2>Choose a focused guide</h2>
-<p>This vignette is a quick tour. Pick the focused guide that matches
-your data when you want more depth:</p>
+<div id="choosing-a-test" class="section level2">
+<h2>Choosing a test</h2>
+<p>A test name has up to three parts, as in <code>PEBA4_UG_ML</code>:
+the method, an optional <code>UG</code>, and an optional statistic. The
+methods are</p>
+<table>
+<colgroup>
+<col width="50%" />
+<col width="50%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="left">Name</th>
+<th align="left">Method</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left"><code>PEBA&lt;j&gt;</code></td>
+<td align="left">Penalized eigenvalue block averaging with
+<code>j</code> blocks. Values from 2 to 6 usually work well;
+<code>j</code> cannot exceed the degrees of freedom.</td>
+</tr>
+<tr class="even">
+<td align="left"><code>POLS&lt;g&gt;</code></td>
+<td align="left">Penalized regression with penalty <code>g</code>.
+Foldnes, Moss, and Grønneberg (2025) studied <code>POLS2</code>.</td>
+</tr>
+<tr class="odd">
+<td align="left"><code>PALL</code></td>
+<td align="left">All eigenvalues, penalized.</td>
+</tr>
+<tr class="even">
+<td align="left"><code>ALL</code></td>
+<td align="left">All eigenvalues, unpenalized.</td>
+</tr>
+<tr class="odd">
+<td align="left"><code>EBA&lt;j&gt;</code></td>
+<td align="left">Eigenvalue block averaging without penalization
+(Foldnes and Grønneberg, 2018).</td>
+</tr>
+<tr class="even">
+<td align="left"><code>STD</code></td>
+<td align="left">The ordinary chi-square reference.</td>
+</tr>
+<tr class="odd">
+<td align="left"><code>SB</code></td>
+<td align="left">The Satorra–Bentler scaled test (Satorra and Bentler,
+1994).</td>
+</tr>
+<tr class="even">
+<td align="left"><code>SS</code></td>
+<td align="left">The scaled-and-shifted test (Asparouhov and Muthén,
+2010).</td>
+</tr>
+<tr class="odd">
+<td align="left"><code>SF</code></td>
+<td align="left">The scaled <em>F</em> test (Wu and Lin, 2016).</td>
+</tr>
+</tbody>
+</table>
+<p><code>UG</code> replaces the usual estimate of <span class="math inline">\(\Gamma\)</span> with the unbiased estimate of Du
+and Bentler (2022). The statistic is <code>ML</code>, the normal-theory
+likelihood-ratio statistic, or <code>RLS</code>, Browne’s (1974)
+reweighted least-squares statistic. Both <code>UG</code> and
+<code>RLS</code> are defined only for complete continuous data fitted by
+maximum likelihood, which includes <code>MLM</code> and <code>MLR</code>
+fits. Names are case-insensitive.</p>
+<p>For maximum likelihood fits, <code>pvalues()</code> defaults to
+<code>PEBA4_RLS</code> and <code>pvalues_nested()</code> to
+<code>PALL_UG_ML</code>, the combinations recommended in the two papers.
+Other fits use <code>PEBA4</code> and <code>PALL</code> with their
+standard statistic.</p>
+<p>A name without a statistic uses <code>RLS</code> on maximum
+likelihood fits. So <code>SB</code> here is the Satorra–Bentler
+correction applied to the RLS statistic, and lavaan’s Satorra–Bentler
+<em>p</em>-value is <code>SB_ML</code>:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a><span class="fu">pvalues</span>(fit, <span class="fu">c</span>(<span class="st">&quot;STD_ML&quot;</span>, <span class="st">&quot;SB_ML&quot;</span>, <span class="st">&quot;SS_ML&quot;</span>, <span class="st">&quot;PEBA4_ML&quot;</span>, <span class="st">&quot;SB&quot;</span>, <span class="st">&quot;PEBA4_UG_RLS&quot;</span>))</span>
+<span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a><span class="co">#&gt;       std_ml        sb_ml        ss_ml     peba4_ml       sb_rls peba4_ug_rls </span></span>
+<span id="cb2-3"><a href="#cb2-3" tabindex="-1"></a><span class="co">#&gt; 8.502553e-09 4.416190e-08 2.746479e-07 1.529609e-07 1.726558e-07 6.669703e-07 </span></span>
+<span id="cb2-4"><a href="#cb2-4" tabindex="-1"></a><span class="co">#&gt; estimator: ML | data: continuous | information: expected | df: 24</span></span>
+<span id="cb2-5"><a href="#cb2-5" tabindex="-1"></a>fit_mlm <span class="ot">&lt;-</span> <span class="fu">cfa</span>(model, HolzingerSwineford1939, <span class="at">estimator =</span> <span class="st">&quot;MLM&quot;</span>)</span>
+<span id="cb2-6"><a href="#cb2-6" tabindex="-1"></a><span class="fu">as.numeric</span>(<span class="fu">fitMeasures</span>(fit_mlm, <span class="st">&quot;pvalue.scaled&quot;</span>))</span>
+<span id="cb2-7"><a href="#cb2-7" tabindex="-1"></a><span class="co">#&gt; [1] 4.41619e-08</span></span></code></pre></div>
+</div>
+<div id="nested-models" class="section level2">
+<h2>Nested models</h2>
+<p>To test whether the two <code>visual</code> loadings that are not
+fixed for scaling are equal, fit the restricted model and pass it to
+<code>pvalues_nested()</code> together with the original fit. The
+restricted model goes first:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a>restricted <span class="ot">&lt;-</span> <span class="st">&quot;</span></span>
+<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a><span class="st">  visual  =~ x1 + a*x2 + a*x3</span></span>
+<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a><span class="st">  textual =~ x4 + x5 + x6</span></span>
+<span id="cb3-4"><a href="#cb3-4" tabindex="-1"></a><span class="st">  speed   =~ x7 + x8 + x9</span></span>
+<span id="cb3-5"><a href="#cb3-5" tabindex="-1"></a><span class="st">&quot;</span></span>
+<span id="cb3-6"><a href="#cb3-6" tabindex="-1"></a>fit0 <span class="ot">&lt;-</span> <span class="fu">cfa</span>(restricted, HolzingerSwineford1939)</span>
+<span id="cb3-7"><a href="#cb3-7" tabindex="-1"></a><span class="fu">pvalues_nested</span>(fit0, fit, <span class="at">tests =</span> <span class="fu">c</span>(<span class="st">&quot;SB_ML&quot;</span>, <span class="st">&quot;PALL_UG_ML&quot;</span>))</span>
+<span id="cb3-8"><a href="#cb3-8" tabindex="-1"></a><span class="co">#&gt;      sb_ml pall_ug_ml </span></span>
+<span id="cb3-9"><a href="#cb3-9" tabindex="-1"></a><span class="co">#&gt; 0.05607963 0.05722534 </span></span>
+<span id="cb3-10"><a href="#cb3-10" tabindex="-1"></a><span class="co">#&gt; estimator: ML | data: continuous | information: expected | df: 1 | nested (method 2000, A.method weighted)</span></span></code></pre></div>
+<p>The test is Satorra’s (2000) difference test. Its restriction matrix
+defaults to <code>A.method = &quot;weighted&quot;</code>, which works for any
+nesting, including models that fix or drop parameters. It depends
+neither on how the factors are identified nor on the units of the
+observed variables. lavaan’s own construction,
+<code>A.method = &quot;delta&quot;</code>, differs only in using an unweighted
+projection, so its <em>p</em>-values change when a variable is rescaled.
+Use it to reproduce lavaan: for <code>MLM</code> fits,
+<code>SB_ML</code> with <code>A.method = &quot;delta&quot;</code> equals
+<code>lavTestLRT(fit, fit0, method = &quot;satorra.2000&quot;)</code>. Here
+<code>x1</code> is measured in tenths instead:</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a>rescaled <span class="ot">&lt;-</span> HolzingerSwineford1939</span>
+<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a>rescaled<span class="sc">$</span>x1 <span class="ot">&lt;-</span> <span class="dv">10</span> <span class="sc">*</span> rescaled<span class="sc">$</span>x1</span>
+<span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a>fit_rescaled <span class="ot">&lt;-</span> <span class="fu">cfa</span>(model, rescaled)</span>
+<span id="cb4-4"><a href="#cb4-4" tabindex="-1"></a>fit0_rescaled <span class="ot">&lt;-</span> <span class="fu">cfa</span>(restricted, rescaled)</span>
+<span id="cb4-5"><a href="#cb4-5" tabindex="-1"></a><span class="fu">sapply</span>(<span class="fu">c</span>(<span class="at">weighted =</span> <span class="st">&quot;weighted&quot;</span>, <span class="at">delta =</span> <span class="st">&quot;delta&quot;</span>), <span class="cf">function</span>(A) {</span>
+<span id="cb4-6"><a href="#cb4-6" tabindex="-1"></a>  <span class="fu">c</span>(</span>
+<span id="cb4-7"><a href="#cb4-7" tabindex="-1"></a>    <span class="at">original =</span> <span class="fu">pvalues_nested</span>(fit0, fit, <span class="at">tests =</span> <span class="st">&quot;SB_ML&quot;</span>, <span class="at">A.method =</span> A)[[<span class="dv">1</span>]],</span>
+<span id="cb4-8"><a href="#cb4-8" tabindex="-1"></a>    <span class="at">rescaled =</span> <span class="fu">pvalues_nested</span>(fit0_rescaled, fit_rescaled,</span>
+<span id="cb4-9"><a href="#cb4-9" tabindex="-1"></a>      <span class="at">tests =</span> <span class="st">&quot;SB_ML&quot;</span>, <span class="at">A.method =</span> A</span>
+<span id="cb4-10"><a href="#cb4-10" tabindex="-1"></a>    )[[<span class="dv">1</span>]]</span>
+<span id="cb4-11"><a href="#cb4-11" tabindex="-1"></a>  )</span>
+<span id="cb4-12"><a href="#cb4-12" tabindex="-1"></a>})</span>
+<span id="cb4-13"><a href="#cb4-13" tabindex="-1"></a><span class="co">#&gt;            weighted      delta</span></span>
+<span id="cb4-14"><a href="#cb4-14" tabindex="-1"></a><span class="co">#&gt; original 0.05607963 0.05940942</span></span>
+<span id="cb4-15"><a href="#cb4-15" tabindex="-1"></a><span class="co">#&gt; rescaled 0.05607961 0.05440472</span></span></code></pre></div>
+<p><code>A.method = &quot;exact&quot;</code> is lavaan’s other alternative; see
+<code>?pvalues</code>.</p>
+<p>Both fits must use the same data, estimator, and fitting options.
+<code>semTests</code> checks this, and if the models arrive in the wrong
+order it warns and swaps them. It does not check that one model is a
+special case of the other.</p>
+</div>
+<div id="other-estimators" class="section level2">
+<h2>Other estimators</h2>
+<p>GLS and ULS fits work the same way:</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a><span class="fu">pvalues</span>(<span class="fu">cfa</span>(model, HolzingerSwineford1939, <span class="at">estimator =</span> <span class="st">&quot;GLS&quot;</span>))</span>
+<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a><span class="co">#&gt;     peba4_ml </span></span>
+<span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a><span class="co">#&gt; 8.854857e-07 </span></span>
+<span id="cb5-4"><a href="#cb5-4" tabindex="-1"></a><span class="co">#&gt; estimator: GLS | data: continuous | information: expected | df: 24</span></span>
+<span id="cb5-5"><a href="#cb5-5" tabindex="-1"></a><span class="fu">pvalues</span>(<span class="fu">cfa</span>(model, HolzingerSwineford1939, <span class="at">estimator =</span> <span class="st">&quot;ULS&quot;</span>))</span>
+<span id="cb5-6"><a href="#cb5-6" tabindex="-1"></a><span class="co">#&gt;     peba4_ml </span></span>
+<span id="cb5-7"><a href="#cb5-7" tabindex="-1"></a><span class="co">#&gt; 2.527109e-08 </span></span>
+<span id="cb5-8"><a href="#cb5-8" tabindex="-1"></a><span class="co">#&gt; estimator: ULS | data: continuous | information: expected | df: 24</span></span></code></pre></div>
+<p>The other vignettes cover the remaining settings:</p>
 <ul>
-<li><code>vignette(&quot;continuous-data&quot;, package = &quot;semTests&quot;)</code>
-covers complete continuous data, the classical ML workflow, GLS/ULS, and
-nested tests.</li>
-<li><code>vignette(&quot;categorical-data&quot;, package = &quot;semTests&quot;)</code>
-covers ordered and mixed indicators, pairwise missingness, and
-categorical nested comparison.</li>
-<li><code>vignette(&quot;fiml-missing-data&quot;, package = &quot;semTests&quot;)</code>
-covers continuous FIML, the finite-sample evidence for the
-observed-information default, the lavaan compatibility convention, and
-nested restriction maps.</li>
-<li><code>vignette(&quot;latent-growth&quot;, package = &quot;semTests&quot;)</code> gives
-FIML a more applied outing in a latent growth model.</li>
-<li><code>vignette(&quot;measurement-invariance&quot;, package = &quot;semTests&quot;)</code>
-walks through threshold and loading invariance with ordinal
-indicators.</li>
+<li><code>vignette(&quot;categorical-data&quot;, package = &quot;semTests&quot;)</code>:
+ordinal and mixed indicators, pairwise missingness, and measurement
+invariance.</li>
+<li><code>vignette(&quot;fiml-missing-data&quot;, package = &quot;semTests&quot;)</code>:
+missing data under full-information maximum likelihood, including a
+latent growth comparison.</li>
+<li><code>vignette(&quot;score-criterion&quot;, package = &quot;semTests&quot;)</code>:
+score and criterion-difference tests with <code>semtest()</code>.</li>
 </ul>
-</div>
-<div id="basic-usage-goodness-of-fit" class="section level2">
-<h2>Basic usage: goodness of fit</h2>
-<p>Fit a model with <code>lavaan</code>, then call
-<code>pvalues()</code>. For ML models, request a robust lavaan test such
-as <code>estimator = &quot;MLM&quot;</code> or <code>&quot;MLR&quot;</code>. This makes
-lavaan store the extra sample information that <code>semTests</code>
-needs.</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a>model <span class="ot">&lt;-</span> <span class="st">&quot;visual  =~ x1 + x2 + x3</span></span>
-<span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a><span class="st">          textual =~ x4 + x5 + x6</span></span>
-<span id="cb2-3"><a href="#cb2-3" tabindex="-1"></a><span class="st">          speed   =~ x7 + x8 + x9&quot;</span></span>
-<span id="cb2-4"><a href="#cb2-4" tabindex="-1"></a>fit <span class="ot">&lt;-</span> <span class="fu">cfa</span>(model, HolzingerSwineford1939, <span class="at">estimator =</span> <span class="st">&quot;MLM&quot;</span>)</span>
-<span id="cb2-5"><a href="#cb2-5" tabindex="-1"></a><span class="fu">pvalues</span>(fit)</span>
-<span id="cb2-6"><a href="#cb2-6" tabindex="-1"></a><span class="co">#&gt;    peba4_rls </span></span>
-<span id="cb2-7"><a href="#cb2-7" tabindex="-1"></a><span class="co">#&gt; 5.165712e-07 </span></span>
-<span id="cb2-8"><a href="#cb2-8" tabindex="-1"></a><span class="co">#&gt; estimator: ML (MLM) | data: continuous | information: expected | df: 24</span></span></code></pre></div>
-<p>The result is a named vector with a short footer showing the
-estimator, data type, information choice, and degrees of freedom
-actually used. The complete record is available with
-<code>attr(x, &quot;semtests&quot;)</code>.</p>
-<div id="the-test-name-grammar" class="section level3">
-<h3>The test-name grammar</h3>
-<p>Each requested test uses one of <code>TEST</code>,
-<code>TEST_UG</code>, <code>TEST_ML</code>, <code>TEST_RLS</code>,
-<code>TEST_UG_ML</code>, or <code>TEST_UG_RLS</code>:</p>
-<ul>
-<li><strong>TEST</strong> gives the family. Choose
-<code>pEBA&lt;j&gt;</code> for penalized block averaging, where
-<code>j</code> is usually between 2 and 6. Other choices include
-<code>pOLS&lt;gamma&gt;</code>, <code>pall</code>, <code>all</code>,
-<code>eba&lt;j&gt;</code>, <code>std</code>, <code>sb</code>,
-<code>ss</code>, and <code>sf</code>.</li>
-<li><strong>UG</strong> asks for the unbiased Du–Bentler (2022) gamma.
-Without <code>UG</code>, the standard biased gamma is used.</li>
-<li><strong>ML / RLS</strong> chooses the base chi-square.
-<code>ML</code> uses the normal-theory discrepancy and <code>RLS</code>
-uses Browne’s reweighted least squares statistic. Leave the suffix out
-to use the default for the fitted model.</li>
-</ul>
-<p>Several tests can be requested at once:</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a><span class="fu">pvalues</span>(fit, <span class="fu">c</span>(<span class="st">&quot;SB_ML&quot;</span>, <span class="st">&quot;pEBA4_ML&quot;</span>, <span class="st">&quot;pOLS2_ML&quot;</span>))</span>
-<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a><span class="co">#&gt;        sb_ml     peba4_ml     pols2_ml </span></span>
-<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a><span class="co">#&gt; 4.416190e-08 1.529609e-07 1.519741e-07 </span></span>
-<span id="cb3-4"><a href="#cb3-4" tabindex="-1"></a><span class="co">#&gt; estimator: ML (MLM) | data: continuous | information: expected | df: 24</span></span></code></pre></div>
-<p>The <code>UG</code> gamma and the <code>RLS</code> statistic belong
-to continuous, complete-data fits from lavaan’s ML family. That includes
-fits requested as <code>MLM</code> or <code>MLR</code>. Other model
-families return an error if either option is requested.</p>
-</div>
-</div>
-<div id="nested-model-comparison" class="section level2">
-<h2>Nested model comparison</h2>
-<p>To compare two nested models, fit both and pass them to
-<code>pvalues_nested()</code> with the <strong>constrained</strong>
-model first. Here we ask whether the textual loadings can be held
-equal:</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a>constrained <span class="ot">&lt;-</span> <span class="st">&quot;visual  =~ x1 + x2 + x3</span></span>
-<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a><span class="st">                textual =~ a*x4 + a*x5 + a*x6</span></span>
-<span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a><span class="st">                speed   =~ x7 + x8 + x9&quot;</span></span>
-<span id="cb4-4"><a href="#cb4-4" tabindex="-1"></a>m1 <span class="ot">&lt;-</span> <span class="fu">cfa</span>(model, HolzingerSwineford1939, <span class="at">estimator =</span> <span class="st">&quot;MLM&quot;</span>)</span>
-<span id="cb4-5"><a href="#cb4-5" tabindex="-1"></a>m0 <span class="ot">&lt;-</span> <span class="fu">cfa</span>(constrained, HolzingerSwineford1939, <span class="at">estimator =</span> <span class="st">&quot;MLM&quot;</span>)</span>
-<span id="cb4-6"><a href="#cb4-6" tabindex="-1"></a><span class="fu">pvalues_nested</span>(m0, m1)</span>
-<span id="cb4-7"><a href="#cb4-7" tabindex="-1"></a><span class="co">#&gt; pall_ug_ml </span></span>
-<span id="cb4-8"><a href="#cb4-8" tabindex="-1"></a><span class="co">#&gt;  0.0166158 </span></span>
-<span id="cb4-9"><a href="#cb4-9" tabindex="-1"></a><span class="co">#&gt; estimator: ML (MLM) | data: continuous | information: expected | df: 2 | nested (method 2000)</span></span></code></pre></div>
-<p><code>PALL</code> is the recommended default for nested comparison
-(Foldnes, Grønneberg, and Moss, 2026). <code>semTests</code> uses
-Satorra’s 2000 construction. The 2001 method has been withdrawn because
-it performs poorly. Both fits must use the same estimator, options,
-variables, groups, and observations. If the inputs arrive in reverse
-order, <code>semTests</code> warns and swaps them.</p>
-</div>
-<div id="more-data-families" class="section level2">
-<h2>More data families</h2>
-<p>The package also covers several non-ML estimators. These paths have
-been checked against a separate implementation.
-<code>?semTests-support</code> gives the exact list of supported
-combinations.</p>
-<p>GLS and ULS work directly. ULS needs a robust lavaan test so the fit
-contains the required sample information:</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a>gls <span class="ot">&lt;-</span> <span class="fu">cfa</span>(model, HolzingerSwineford1939, <span class="at">estimator =</span> <span class="st">&quot;GLS&quot;</span>)</span>
-<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a><span class="fu">pvalues</span>(gls, <span class="st">&quot;pEBA4&quot;</span>)</span>
-<span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a><span class="co">#&gt;     peba4_ml </span></span>
-<span id="cb5-4"><a href="#cb5-4" tabindex="-1"></a><span class="co">#&gt; 8.854857e-07 </span></span>
-<span id="cb5-5"><a href="#cb5-5" tabindex="-1"></a><span class="co">#&gt; estimator: GLS | data: continuous | information: expected | df: 24</span></span>
-<span id="cb5-6"><a href="#cb5-6" tabindex="-1"></a></span>
-<span id="cb5-7"><a href="#cb5-7" tabindex="-1"></a>uls <span class="ot">&lt;-</span> <span class="fu">cfa</span>(model, HolzingerSwineford1939,</span>
-<span id="cb5-8"><a href="#cb5-8" tabindex="-1"></a>  <span class="at">estimator =</span> <span class="st">&quot;ULS&quot;</span>,</span>
-<span id="cb5-9"><a href="#cb5-9" tabindex="-1"></a>  <span class="at">test =</span> <span class="st">&quot;satorra.bentler&quot;</span></span>
-<span id="cb5-10"><a href="#cb5-10" tabindex="-1"></a>)</span>
-<span id="cb5-11"><a href="#cb5-11" tabindex="-1"></a><span class="fu">pvalues</span>(uls, <span class="st">&quot;pEBA4&quot;</span>)</span>
-<span id="cb5-12"><a href="#cb5-12" tabindex="-1"></a><span class="co">#&gt;     peba4_ml </span></span>
-<span id="cb5-13"><a href="#cb5-13" tabindex="-1"></a><span class="co">#&gt; 2.527237e-08 </span></span>
-<span id="cb5-14"><a href="#cb5-14" tabindex="-1"></a><span class="co">#&gt; estimator: ULS | data: continuous | information: expected | df: 24</span></span></code></pre></div>
-<p>Missing data is handled through full-information maximum likelihood.
-Fit with <code>missing = &quot;fiml&quot;</code> and pass the fit to
-<code>pvalues()</code> as usual. FIML uses the usual biased gamma and
-the standard statistic, so suffix-free test names are the right
-choice.</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a>HS <span class="ot">&lt;-</span> HolzingerSwineford1939</span>
-<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">1</span>)</span>
-<span id="cb6-3"><a href="#cb6-3" tabindex="-1"></a>HS<span class="sc">$</span>x1[<span class="fu">sample</span>(<span class="fu">nrow</span>(HS), <span class="dv">60</span>)] <span class="ot">&lt;-</span> <span class="cn">NA</span></span>
-<span id="cb6-4"><a href="#cb6-4" tabindex="-1"></a>fit_fiml <span class="ot">&lt;-</span> <span class="fu">cfa</span>(model, HS, <span class="at">missing =</span> <span class="st">&quot;fiml&quot;</span>, <span class="at">estimator =</span> <span class="st">&quot;MLR&quot;</span>)</span>
-<span id="cb6-5"><a href="#cb6-5" tabindex="-1"></a><span class="fu">pvalues</span>(fit_fiml)</span>
-<span id="cb6-6"><a href="#cb6-6" tabindex="-1"></a><span class="co">#&gt;     peba4_ml </span></span>
-<span id="cb6-7"><a href="#cb6-7" tabindex="-1"></a><span class="co">#&gt; 2.845778e-08 </span></span>
-<span id="cb6-8"><a href="#cb6-8" tabindex="-1"></a><span class="co">#&gt; estimator: ML (MLR) (FIML) | data: continuous | information: observed | df: 24 | FIML convention: observed</span></span></code></pre></div>
-<p>Observed information is the default, following Savalei (2010). The
-choice and the optional lavaan-compatibility convention are explained in
-<code>vignette(&quot;fiml-missing-data&quot;, package = &quot;semTests&quot;)</code>, along
-with nested FIML examples.</p>
-<div id="ordered-and-mixed-indicators" class="section level3">
-<h3>Ordered and mixed indicators</h3>
-<p>Categorical models use lavaan’s inspected <code>UGamma</code> and
-unscaled statistic. DWLS, including WLSMV/WLSM/WLSMVS, and ULS,
-including ULSMV, are supported for single-group and multigroup ordered
-or mixed-indicator models. Full WLS/ADF is refused because its
-correction reduces to the ordinary chi-square.</p>
-<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a>HSord <span class="ot">&lt;-</span> HolzingerSwineford1939</span>
-<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a>ordered_names <span class="ot">&lt;-</span> <span class="fu">paste0</span>(<span class="st">&quot;x&quot;</span>, <span class="dv">1</span><span class="sc">:</span><span class="dv">9</span>)</span>
-<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a>HSord[ordered_names] <span class="ot">&lt;-</span> <span class="fu">lapply</span>(</span>
-<span id="cb7-4"><a href="#cb7-4" tabindex="-1"></a>  HSord[ordered_names],</span>
-<span id="cb7-5"><a href="#cb7-5" tabindex="-1"></a>  <span class="cf">function</span>(x) <span class="fu">ordered</span>(<span class="fu">cut</span>(x, <span class="dv">3</span>))</span>
-<span id="cb7-6"><a href="#cb7-6" tabindex="-1"></a>)</span>
-<span id="cb7-7"><a href="#cb7-7" tabindex="-1"></a>fit_ordinal <span class="ot">&lt;-</span> <span class="fu">cfa</span>(model, HSord, <span class="at">ordered =</span> ordered_names)</span>
-<span id="cb7-8"><a href="#cb7-8" tabindex="-1"></a><span class="fu">pvalues</span>(fit_ordinal, <span class="fu">c</span>(<span class="st">&quot;SB&quot;</span>, <span class="st">&quot;SS&quot;</span>, <span class="st">&quot;pEBA4&quot;</span>))</span>
-<span id="cb7-9"><a href="#cb7-9" tabindex="-1"></a><span class="co">#&gt;        sb_ml        ss_ml     peba4_ml </span></span>
-<span id="cb7-10"><a href="#cb7-10" tabindex="-1"></a><span class="co">#&gt; 1.330014e-06 1.966414e-05 7.156389e-06 </span></span>
-<span id="cb7-11"><a href="#cb7-11" tabindex="-1"></a><span class="co">#&gt; estimator: DWLS (WLSMV) | data: categorical | information: expected | df: 24</span></span></code></pre></div>
-<p>The artificial cut only keeps this tour reproducible. In a real
-analysis, the decision to treat an indicator as ordered should come from
-how it was measured.</p>
-<p>Categorical fits may use listwise or pairwise missingness. Pairwise
-support uses lavaan’s pairwise sample statistics and
-<code>UGamma</code>. Pairwise deletion has its own missingness
-assumptions and does not provide FIML inference. Nested categorical
-comparison uses <code>method = &quot;2000&quot;</code> with
-<code>A.method = &quot;delta&quot;</code>.</p>
-</div>
+<p><code>?semTests-support</code> lists every supported combination of
+estimator, data type, and test.</p>
 </div>
 <div id="references" class="section level2">
 <h2>References</h2>
+<p>Asparouhov, T., &amp; Muthén, B. O. (2010). <em>Simple second order
+chi-square correction</em>. Mplus Technical Appendix. <a href="https://www.statmodel.com/download/WLSMV_new_chi21.pdf" class="uri">https://www.statmodel.com/download/WLSMV_new_chi21.pdf</a></p>
 <p>Browne, M. W. (1974). Generalized least squares estimators in the
 analysis of covariance structures. <em>South African Statistical
 Journal</em>, 8, 1–24.</p>
-<p>Du, H., &amp; Bentler, P. M. (2022). 40-Year Old Unbiased
-Distribution Free Estimator Reliably Improves SEM Statistics for
-Nonnormal Data. <em>Structural Equation Modeling</em>, 29(6), 872–887.
+<p>Du, H., &amp; Bentler, P. M. (2022). 40-year old unbiased
+distribution free estimator reliably improves SEM statistics for
+nonnormal data. <em>Structural Equation Modeling</em>, 29(6), 872–887.
 <a href="https://doi.org/10.1080/10705511.2022.2063870" class="uri">https://doi.org/10.1080/10705511.2022.2063870</a></p>
-<p>Foldnes, N., Moss, J., &amp; Grønneberg, S. (2025). Improved goodness
-of fit procedures for structural equation models. <em>Structural
-Equation Modeling: A Multidisciplinary Journal</em>, 32(1), 1–13. <a href="https://doi.org/10.1080/10705511.2024.2372028" class="uri">https://doi.org/10.1080/10705511.2024.2372028</a></p>
+<p>Foldnes, N., &amp; Grønneberg, S. (2018). Approximating test
+statistics using eigenvalue block averaging. <em>Structural Equation
+Modeling</em>, 25(1), 101–114. <a href="https://doi.org/10.1080/10705511.2017.1373021" class="uri">https://doi.org/10.1080/10705511.2017.1373021</a></p>
 <p>Foldnes, N., Grønneberg, S., &amp; Moss, J. (2026). Penalized
 eigenvalue block averaging: Extension to nested model comparison and
 Monte Carlo evaluations. <em>Behavior Research Methods</em>, 58, article
 107. <a href="https://doi.org/10.3758/s13428-026-02968-4" class="uri">https://doi.org/10.3758/s13428-026-02968-4</a></p>
-<p>Savalei, V. (2010). Expected versus observed information in SEM with
-incomplete normal and nonnormal data. <em>Psychological Methods</em>,
-15(4), 352–367. <a href="https://doi.org/10.1037/a0020143" class="uri">https://doi.org/10.1037/a0020143</a></p>
+<p>Foldnes, N., Moss, J., &amp; Grønneberg, S. (2025). Improved goodness
+of fit procedures for structural equation models. <em>Structural
+Equation Modeling</em>, 32(1), 1–13. <a href="https://doi.org/10.1080/10705511.2024.2372028" class="uri">https://doi.org/10.1080/10705511.2024.2372028</a></p>
 <p>Satorra, A. (2000). Scaled and adjusted restricted tests in
 multi-sample analysis of moment structures. In R. D. H. Heijmans, D. S.
 G. Pollock, &amp; A. Satorra (Eds.), <em>Innovations in Multivariate
@@ -550,6 +586,9 @@ Statistical Analysis</em> (pp. 233–247). Kluwer Academic. <a href="https://do
 statistics and standard errors in covariance structure analysis. In A.
 von Eye &amp; C. C. Clogg (Eds.), <em>Latent Variables Analysis:
 Applications for Developmental Research</em> (pp. 399–419). Sage.</p>
+<p>Wu, H., &amp; Lin, J. (2016). A scaled F distribution as an
+approximation to the distribution of test statistics in covariance
+structure analysis. <em>Structural Equation Modeling</em>. <a href="https://doi.org/10.1080/10705511.2015.1057733" class="uri">https://doi.org/10.1080/10705511.2015.1057733</a></p>
 </div>
 
 

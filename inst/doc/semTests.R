@@ -6,52 +6,47 @@ knitr::opts_chunk$set(
   warning = FALSE
 )
 
-## ----setup--------------------------------------------------------------------
+## ----fit----------------------------------------------------------------------
 library("semTests")
 library("lavaan")
 
-## ----basic--------------------------------------------------------------------
-model <- "visual  =~ x1 + x2 + x3
-          textual =~ x4 + x5 + x6
-          speed   =~ x7 + x8 + x9"
-fit <- cfa(model, HolzingerSwineford1939, estimator = "MLM")
+model <- "
+  visual  =~ x1 + x2 + x3
+  textual =~ x4 + x5 + x6
+  speed   =~ x7 + x8 + x9
+"
+fit <- cfa(model, HolzingerSwineford1939)
 pvalues(fit)
 
-## ----grammar------------------------------------------------------------------
-pvalues(fit, c("SB_ML", "pEBA4_ML", "pOLS2_ML"))
+## ----battery------------------------------------------------------------------
+pvalues(fit, c("STD_ML", "SB_ML", "SS_ML", "PEBA4_ML", "SB", "PEBA4_UG_RLS"))
+fit_mlm <- cfa(model, HolzingerSwineford1939, estimator = "MLM")
+as.numeric(fitMeasures(fit_mlm, "pvalue.scaled"))
 
 ## ----nested-------------------------------------------------------------------
-constrained <- "visual  =~ x1 + x2 + x3
-                textual =~ a*x4 + a*x5 + a*x6
-                speed   =~ x7 + x8 + x9"
-m1 <- cfa(model, HolzingerSwineford1939, estimator = "MLM")
-m0 <- cfa(constrained, HolzingerSwineford1939, estimator = "MLM")
-pvalues_nested(m0, m1)
+restricted <- "
+  visual  =~ x1 + a*x2 + a*x3
+  textual =~ x4 + x5 + x6
+  speed   =~ x7 + x8 + x9
+"
+fit0 <- cfa(restricted, HolzingerSwineford1939)
+pvalues_nested(fit0, fit, tests = c("SB_ML", "PALL_UG_ML"))
+
+## ----units--------------------------------------------------------------------
+rescaled <- HolzingerSwineford1939
+rescaled$x1 <- 10 * rescaled$x1
+fit_rescaled <- cfa(model, rescaled)
+fit0_rescaled <- cfa(restricted, rescaled)
+sapply(c(weighted = "weighted", delta = "delta"), function(A) {
+  c(
+    original = pvalues_nested(fit0, fit, tests = "SB_ML", A.method = A)[[1]],
+    rescaled = pvalues_nested(fit0_rescaled, fit_rescaled,
+      tests = "SB_ML", A.method = A
+    )[[1]]
+  )
+})
 
 ## ----estimators---------------------------------------------------------------
-gls <- cfa(model, HolzingerSwineford1939, estimator = "GLS")
-pvalues(gls, "pEBA4")
-
-uls <- cfa(model, HolzingerSwineford1939,
-  estimator = "ULS",
-  test = "satorra.bentler"
-)
-pvalues(uls, "pEBA4")
-
-## ----fiml---------------------------------------------------------------------
-HS <- HolzingerSwineford1939
-set.seed(1)
-HS$x1[sample(nrow(HS), 60)] <- NA
-fit_fiml <- cfa(model, HS, missing = "fiml", estimator = "MLR")
-pvalues(fit_fiml)
-
-## ----categorical--------------------------------------------------------------
-HSord <- HolzingerSwineford1939
-ordered_names <- paste0("x", 1:9)
-HSord[ordered_names] <- lapply(
-  HSord[ordered_names],
-  function(x) ordered(cut(x, 3))
-)
-fit_ordinal <- cfa(model, HSord, ordered = ordered_names)
-pvalues(fit_ordinal, c("SB", "SS", "pEBA4"))
+pvalues(cfa(model, HolzingerSwineford1939, estimator = "GLS"))
+pvalues(cfa(model, HolzingerSwineford1939, estimator = "ULS"))
 

@@ -12,7 +12,7 @@
 
 
 
-<title>FIML models and information conventions</title>
+<title>Missing data with FIML</title>
 
 <script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
 // be compatible with the behavior of Pandoc < 2.8).
@@ -337,21 +337,27 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 
 
 
-<h1 class="title toc-ignore">FIML models and information
-conventions</h1>
+<h1 class="title toc-ignore">Missing data with FIML</h1>
 
 
 
 <div id="scope" class="section level2">
 <h2>Scope</h2>
-<p><code>semTests</code> supports continuous FIML models with one or
-several groups. Observed exogenous predictors can be included when they
-are modeled jointly by setting <code>fixed.x = FALSE</code> and
-<code>conditional.x = FALSE</code>. Fixed or conditional predictors need
-a different reference distribution and are refused for now. These models
-use the standard likelihood-ratio statistic and the usual biased gamma
-estimate. The complete-data <code>RLS</code> and Du–Bentler
-<code>UG</code> choices do not apply.</p>
+<p><code>semTests</code> supports continuous data with missing values
+fitted by full-information maximum likelihood
+(<code>missing = &quot;fiml&quot;</code>), with one or several groups. The
+statistic is the likelihood-ratio statistic and <span class="math inline">\(\Gamma\)</span> is the usual biased estimate, so
+the <code>UG</code> and <code>RLS</code> options do not apply. Observed
+predictors are supported when they are modeled jointly with the other
+variables (<code>fixed.x = FALSE</code> and
+<code>conditional.x = FALSE</code>). Fixed or conditional predictors are
+refused.</p>
+</div>
+<div id="a-model-with-missing-values" class="section level2">
+<h2>A model with missing values</h2>
+<p>To have data that are missing at random, we delete values of
+<code>x1</code> and <code>x5</code> with probabilities that depend on
+the always-observed <code>x9</code>:</p>
 <div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="fu">library</span>(<span class="st">&quot;semTests&quot;</span>)</span>
 <span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a><span class="fu">library</span>(<span class="st">&quot;lavaan&quot;</span>)</span>
 <span id="cb1-3"><a href="#cb1-3" tabindex="-1"></a></span>
@@ -359,342 +365,167 @@ estimate. The complete-data <code>RLS</code> and Du–Bentler
 <span id="cb1-5"><a href="#cb1-5" tabindex="-1"></a><span class="st">  visual  =~ x1 + x2 + x3</span></span>
 <span id="cb1-6"><a href="#cb1-6" tabindex="-1"></a><span class="st">  textual =~ x4 + x5 + x6</span></span>
 <span id="cb1-7"><a href="#cb1-7" tabindex="-1"></a><span class="st">  speed   =~ x7 + x8 + x9</span></span>
-<span id="cb1-8"><a href="#cb1-8" tabindex="-1"></a><span class="st">&quot;</span></span></code></pre></div>
+<span id="cb1-8"><a href="#cb1-8" tabindex="-1"></a><span class="st">&quot;</span></span>
+<span id="cb1-9"><a href="#cb1-9" tabindex="-1"></a></span>
+<span id="cb1-10"><a href="#cb1-10" tabindex="-1"></a>fiml_data <span class="ot">&lt;-</span> HolzingerSwineford1939</span>
+<span id="cb1-11"><a href="#cb1-11" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">20260717</span>)</span>
+<span id="cb1-12"><a href="#cb1-12" tabindex="-1"></a>driver <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(<span class="fu">scale</span>(fiml_data<span class="sc">$</span>x9))</span>
+<span id="cb1-13"><a href="#cb1-13" tabindex="-1"></a>missing_x1 <span class="ot">&lt;-</span> <span class="fu">runif</span>(<span class="fu">nrow</span>(fiml_data)) <span class="sc">&lt;</span> <span class="fu">plogis</span>(<span class="fu">qlogis</span>(.<span class="dv">20</span>) <span class="sc">+</span> .<span class="dv">8</span> <span class="sc">*</span> driver)</span>
+<span id="cb1-14"><a href="#cb1-14" tabindex="-1"></a>missing_x5 <span class="ot">&lt;-</span> <span class="fu">runif</span>(<span class="fu">nrow</span>(fiml_data)) <span class="sc">&lt;</span> <span class="fu">plogis</span>(<span class="fu">qlogis</span>(.<span class="dv">20</span>) <span class="sc">-</span> .<span class="dv">8</span> <span class="sc">*</span> driver)</span>
+<span id="cb1-15"><a href="#cb1-15" tabindex="-1"></a>fiml_data<span class="sc">$</span>x1[missing_x1] <span class="ot">&lt;-</span> <span class="cn">NA</span></span>
+<span id="cb1-16"><a href="#cb1-16" tabindex="-1"></a>fiml_data<span class="sc">$</span>x5[missing_x5] <span class="ot">&lt;-</span> <span class="cn">NA</span></span>
+<span id="cb1-17"><a href="#cb1-17" tabindex="-1"></a><span class="fu">colMeans</span>(<span class="fu">is.na</span>(fiml_data[<span class="fu">c</span>(<span class="st">&quot;x1&quot;</span>, <span class="st">&quot;x5&quot;</span>)]))</span>
+<span id="cb1-18"><a href="#cb1-18" tabindex="-1"></a><span class="co">#&gt;        x1        x5 </span></span>
+<span id="cb1-19"><a href="#cb1-19" tabindex="-1"></a><span class="co">#&gt; 0.2624585 0.2059801</span></span></code></pre></div>
+<p>The fit and the call to <code>pvalues()</code> look as they do for
+complete data:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a>fit <span class="ot">&lt;-</span> <span class="fu">cfa</span>(model, fiml_data, <span class="at">missing =</span> <span class="st">&quot;fiml&quot;</span>)</span>
+<span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a><span class="fu">pvalues</span>(fit, <span class="fu">c</span>(<span class="st">&quot;SB&quot;</span>, <span class="st">&quot;SS&quot;</span>, <span class="st">&quot;PEBA4&quot;</span>))</span>
+<span id="cb2-3"><a href="#cb2-3" tabindex="-1"></a><span class="co">#&gt;        sb_ml        ss_ml     peba4_ml </span></span>
+<span id="cb2-4"><a href="#cb2-4" tabindex="-1"></a><span class="co">#&gt; 2.442470e-08 1.018704e-07 6.558237e-08 </span></span>
+<span id="cb2-5"><a href="#cb2-5" tabindex="-1"></a><span class="co">#&gt; estimator: ML (FIML) | data: continuous | information: observed | df: 24 | FIML convention: observed</span></span></code></pre></div>
 </div>
-<div id="a-reproducible-mar-like-example" class="section level2">
-<h2>A reproducible MAR-like example</h2>
-<p>To make the information choice visible, we let missingness in
-<code>x1</code> and <code>x5</code> depend on <code>x9</code>, which
-stays observed. This gives the example a reproducible MAR-like
-mechanism. It says nothing about the missingness process in the original
-data.</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a>fiml_data <span class="ot">&lt;-</span> HolzingerSwineford1939</span>
-<span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">20260717</span>)</span>
-<span id="cb2-3"><a href="#cb2-3" tabindex="-1"></a>driver <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(<span class="fu">scale</span>(fiml_data<span class="sc">$</span>x9))</span>
-<span id="cb2-4"><a href="#cb2-4" tabindex="-1"></a></span>
-<span id="cb2-5"><a href="#cb2-5" tabindex="-1"></a>missing_x1 <span class="ot">&lt;-</span> <span class="fu">runif</span>(<span class="fu">nrow</span>(fiml_data)) <span class="sc">&lt;</span></span>
-<span id="cb2-6"><a href="#cb2-6" tabindex="-1"></a>  <span class="fu">plogis</span>(<span class="fu">qlogis</span>(.<span class="dv">20</span>) <span class="sc">+</span> .<span class="dv">8</span> <span class="sc">*</span> driver)</span>
-<span id="cb2-7"><a href="#cb2-7" tabindex="-1"></a>missing_x5 <span class="ot">&lt;-</span> <span class="fu">runif</span>(<span class="fu">nrow</span>(fiml_data)) <span class="sc">&lt;</span></span>
-<span id="cb2-8"><a href="#cb2-8" tabindex="-1"></a>  <span class="fu">plogis</span>(<span class="fu">qlogis</span>(.<span class="dv">20</span>) <span class="sc">-</span> .<span class="dv">8</span> <span class="sc">*</span> driver)</span>
-<span id="cb2-9"><a href="#cb2-9" tabindex="-1"></a></span>
-<span id="cb2-10"><a href="#cb2-10" tabindex="-1"></a>fiml_data<span class="sc">$</span>x1[missing_x1] <span class="ot">&lt;-</span> <span class="cn">NA</span></span>
-<span id="cb2-11"><a href="#cb2-11" tabindex="-1"></a>fiml_data<span class="sc">$</span>x5[missing_x5] <span class="ot">&lt;-</span> <span class="cn">NA</span></span>
-<span id="cb2-12"><a href="#cb2-12" tabindex="-1"></a><span class="fu">colMeans</span>(<span class="fu">is.na</span>(fiml_data[<span class="fu">paste0</span>(<span class="st">&quot;x&quot;</span>, <span class="dv">1</span><span class="sc">:</span><span class="dv">9</span>)]))</span>
-<span id="cb2-13"><a href="#cb2-13" tabindex="-1"></a><span class="co">#&gt;        x1        x2        x3        x4        x5        x6        x7        x8 </span></span>
-<span id="cb2-14"><a href="#cb2-14" tabindex="-1"></a><span class="co">#&gt; 0.2624585 0.0000000 0.0000000 0.0000000 0.2059801 0.0000000 0.0000000 0.0000000 </span></span>
-<span id="cb2-15"><a href="#cb2-15" tabindex="-1"></a><span class="co">#&gt;        x9 </span></span>
-<span id="cb2-16"><a href="#cb2-16" tabindex="-1"></a><span class="co">#&gt; 0.0000000</span></span></code></pre></div>
-<p>Fit the model using FIML:</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a>fit_observed <span class="ot">&lt;-</span> <span class="fu">cfa</span>(</span>
-<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a>  model, fiml_data,</span>
-<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a>  <span class="at">missing =</span> <span class="st">&quot;fiml&quot;</span>,</span>
-<span id="cb3-4"><a href="#cb3-4" tabindex="-1"></a>  <span class="at">estimator =</span> <span class="st">&quot;MLR&quot;</span></span>
-<span id="cb3-5"><a href="#cb3-5" tabindex="-1"></a>)</span>
-<span id="cb3-6"><a href="#cb3-6" tabindex="-1"></a></span>
-<span id="cb3-7"><a href="#cb3-7" tabindex="-1"></a><span class="fu">pvalues</span>(fit_observed, <span class="fu">c</span>(<span class="st">&quot;SB&quot;</span>, <span class="st">&quot;SS&quot;</span>, <span class="st">&quot;PEBA4&quot;</span>))</span>
-<span id="cb3-8"><a href="#cb3-8" tabindex="-1"></a><span class="co">#&gt;        sb_ml        ss_ml     peba4_ml </span></span>
-<span id="cb3-9"><a href="#cb3-9" tabindex="-1"></a><span class="co">#&gt; 2.442470e-08 1.018704e-07 6.558237e-08 </span></span>
-<span id="cb3-10"><a href="#cb3-10" tabindex="-1"></a><span class="co">#&gt; estimator: ML (MLR) (FIML) | data: continuous | information: observed | df: 24 | FIML convention: observed</span></span></code></pre></div>
-<p>An observed predictor works too when its distribution belongs to the
-joint model:</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a>model_x <span class="ot">&lt;-</span> <span class="st">&quot;</span></span>
-<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a><span class="st">  visual =~ x1 + x2 + x3</span></span>
-<span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a><span class="st">  visual ~ ageyr</span></span>
-<span id="cb4-4"><a href="#cb4-4" tabindex="-1"></a><span class="st">&quot;</span></span>
-<span id="cb4-5"><a href="#cb4-5" tabindex="-1"></a></span>
-<span id="cb4-6"><a href="#cb4-6" tabindex="-1"></a>random_x_data <span class="ot">&lt;-</span> fiml_data</span>
-<span id="cb4-7"><a href="#cb4-7" tabindex="-1"></a>random_x_data<span class="sc">$</span>ageyr[<span class="fu">seq</span>(<span class="dv">7</span>, <span class="fu">nrow</span>(random_x_data), <span class="at">by =</span> <span class="dv">23</span>)] <span class="ot">&lt;-</span> <span class="cn">NA</span></span>
-<span id="cb4-8"><a href="#cb4-8" tabindex="-1"></a></span>
-<span id="cb4-9"><a href="#cb4-9" tabindex="-1"></a>fit_random_x <span class="ot">&lt;-</span> <span class="fu">cfa</span>(</span>
-<span id="cb4-10"><a href="#cb4-10" tabindex="-1"></a>  model_x, random_x_data,</span>
-<span id="cb4-11"><a href="#cb4-11" tabindex="-1"></a>  <span class="at">missing =</span> <span class="st">&quot;fiml&quot;</span>, <span class="at">estimator =</span> <span class="st">&quot;MLR&quot;</span>,</span>
-<span id="cb4-12"><a href="#cb4-12" tabindex="-1"></a>  <span class="at">fixed.x =</span> <span class="cn">FALSE</span>, <span class="at">conditional.x =</span> <span class="cn">FALSE</span></span>
-<span id="cb4-13"><a href="#cb4-13" tabindex="-1"></a>)</span>
-<span id="cb4-14"><a href="#cb4-14" tabindex="-1"></a></span>
-<span id="cb4-15"><a href="#cb4-15" tabindex="-1"></a><span class="fu">pvalues</span>(fit_random_x, <span class="fu">c</span>(<span class="st">&quot;SB&quot;</span>, <span class="st">&quot;SS&quot;</span>, <span class="st">&quot;PEBA2&quot;</span>))</span>
-<span id="cb4-16"><a href="#cb4-16" tabindex="-1"></a><span class="co">#&gt;     sb_ml     ss_ml  peba2_ml </span></span>
-<span id="cb4-17"><a href="#cb4-17" tabindex="-1"></a><span class="co">#&gt; 0.6776279 0.6772337 0.6775772 </span></span>
-<span id="cb4-18"><a href="#cb4-18" tabindex="-1"></a><span class="co">#&gt; estimator: ML (MLR) (FIML) | data: continuous | information: observed | df: 2 | FIML convention: observed</span></span></code></pre></div>
-<p>Because <code>ageyr</code> belongs to the joint model, its missing
-values are handled by FIML too. Calling a predictor random is still a
-modeling decision. If <code>ageyr</code> should instead be treated as a
-fixed design variable, this example is not a substitute for a
-conditional analysis.</p>
+<div id="observed-information" class="section level2">
+<h2>Observed information</h2>
+<p><code>semTests</code> uses observed information for both the
+saturated and the fitted model. Expected information, as SEM software
+computes it, ignores the missingness mechanism and is inconsistent when
+data are missing at random but not completely at random (Kenward and
+Molenberghs, 1998). Savalei (2010) shows the consequences for SEM, and
+Savalei and Rosseel (2022) describe how lavaan’s options handle the
+choice. We also compared the conventions by simulation, for the interval
+coverage of a loading and a factor covariance, with normal and <span class="math inline">\(t_5\)</span> data, complete, MCAR, and MAR data,
+and sample sizes from 150 to 1200. Observed information with a sandwich
+covariance came closest to the nominal 95%, most clearly for
+heavy-tailed data and misspecified models.</p>
+<p>lavaan’s <code>information</code> option therefore does not change
+the <code>semTests</code> result. It does change lavaan’s own robust
+tests:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a>fit_expected <span class="ot">&lt;-</span> <span class="fu">cfa</span>(model, fiml_data, <span class="at">missing =</span> <span class="st">&quot;fiml&quot;</span>, <span class="at">information =</span> <span class="st">&quot;expected&quot;</span>)</span>
+<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a>lavaan_sb <span class="ot">&lt;-</span> <span class="cf">function</span>(fit) {</span>
+<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a>  <span class="fu">lavTest</span>(fit, <span class="at">test =</span> <span class="st">&quot;satorra.bentler&quot;</span>)<span class="sc">$</span>satorra.bentler<span class="sc">$</span>pvalue</span>
+<span id="cb3-4"><a href="#cb3-4" tabindex="-1"></a>}</span>
+<span id="cb3-5"><a href="#cb3-5" tabindex="-1"></a><span class="fu">rbind</span>(</span>
+<span id="cb3-6"><a href="#cb3-6" tabindex="-1"></a>  <span class="at">semTests =</span> <span class="fu">c</span>(</span>
+<span id="cb3-7"><a href="#cb3-7" tabindex="-1"></a>    <span class="at">observed =</span> <span class="fu">pvalues</span>(fit, <span class="st">&quot;SB&quot;</span>)[[<span class="dv">1</span>]],</span>
+<span id="cb3-8"><a href="#cb3-8" tabindex="-1"></a>    <span class="at">expected =</span> <span class="fu">pvalues</span>(fit_expected, <span class="st">&quot;SB&quot;</span>)[[<span class="dv">1</span>]]</span>
+<span id="cb3-9"><a href="#cb3-9" tabindex="-1"></a>  ),</span>
+<span id="cb3-10"><a href="#cb3-10" tabindex="-1"></a>  <span class="at">lavaan =</span> <span class="fu">c</span>(<span class="fu">lavaan_sb</span>(fit), <span class="fu">lavaan_sb</span>(fit_expected))</span>
+<span id="cb3-11"><a href="#cb3-11" tabindex="-1"></a>)</span>
+<span id="cb3-12"><a href="#cb3-12" tabindex="-1"></a><span class="co">#&gt;              observed     expected</span></span>
+<span id="cb3-13"><a href="#cb3-13" tabindex="-1"></a><span class="co">#&gt; semTests 2.442470e-08 2.442470e-08</span></span>
+<span id="cb3-14"><a href="#cb3-14" tabindex="-1"></a><span class="co">#&gt; lavaan   1.048556e-10 6.647741e-08</span></span></code></pre></div>
+<p>The printed footer reports the fit’s <code>information</code> option,
+and <code>FIML convention: observed</code> reports what
+<code>semTests</code> used.</p>
 </div>
-<div id="keep-the-two-information-choices-separate" class="section level2">
-<h2>Keep the two information choices separate</h2>
-<p>Two similarly named controls do different jobs:</p>
-<ol style="list-style-type: decimal">
-<li>lavaan’s <code>information</code> fit option selects the model
-information stored and used for lavaan’s own inference.</li>
-<li><code>fiml.convention</code> selects the information matrices that
-<code>semTests</code> uses for its reference distribution.</li>
-</ol>
-<p>The <code>semTests</code> default, <code>&quot;observed&quot;</code>, uses
-observed saturated and observed model information throughout.
-<code>semTests</code> requests these matrices explicitly. A lavaan fit
-created with expected information therefore keeps the same
-observed-convention result.</p>
-<p>Choose <code>&quot;lavaan&quot;</code> when the goal is compatibility with
-lavaan’s own robust construction. For one model, it reproduces
-<code>lavInspect(fit, &quot;UGamma&quot;)</code>. For a nested pair, it reproduces
-lavaan’s public Satorra-2000 construction. In that compatibility path,
-<code>information = &quot;expected&quot;</code> controls the model-information
-part of the calculation.</p>
+<div id="observed-predictors" class="section level2">
+<h2>Observed predictors</h2>
+<p>A predictor whose distribution is part of the model can have missing
+values too. Here <code>ageyr</code> predicts the visual factor:</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a>predictor_data <span class="ot">&lt;-</span> fiml_data</span>
+<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a>predictor_data<span class="sc">$</span>ageyr[<span class="fu">seq</span>(<span class="dv">7</span>, <span class="fu">nrow</span>(predictor_data), <span class="at">by =</span> <span class="dv">23</span>)] <span class="ot">&lt;-</span> <span class="cn">NA</span></span>
+<span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a>fit_predictor <span class="ot">&lt;-</span> <span class="fu">cfa</span>(<span class="st">&quot;visual =~ x1 + x2 + x3</span></span>
+<span id="cb4-4"><a href="#cb4-4" tabindex="-1"></a><span class="st">                      visual ~ ageyr&quot;</span>,</span>
+<span id="cb4-5"><a href="#cb4-5" tabindex="-1"></a>  predictor_data,</span>
+<span id="cb4-6"><a href="#cb4-6" tabindex="-1"></a>  <span class="at">missing =</span> <span class="st">&quot;fiml&quot;</span>, <span class="at">fixed.x =</span> <span class="cn">FALSE</span>, <span class="at">conditional.x =</span> <span class="cn">FALSE</span></span>
+<span id="cb4-7"><a href="#cb4-7" tabindex="-1"></a>)</span>
+<span id="cb4-8"><a href="#cb4-8" tabindex="-1"></a><span class="fu">pvalues</span>(fit_predictor, <span class="fu">c</span>(<span class="st">&quot;SB&quot;</span>, <span class="st">&quot;PALL&quot;</span>))</span>
+<span id="cb4-9"><a href="#cb4-9" tabindex="-1"></a><span class="co">#&gt;     sb_ml   pall_ml </span></span>
+<span id="cb4-10"><a href="#cb4-10" tabindex="-1"></a><span class="co">#&gt; 0.6776279 0.6775772 </span></span>
+<span id="cb4-11"><a href="#cb4-11" tabindex="-1"></a><span class="co">#&gt; estimator: ML (FIML) | data: continuous | information: observed | df: 2 | FIML convention: observed</span></span></code></pre></div>
+<p>The model has 2 degrees of freedom, so it cannot use the default
+<code>PEBA4</code>. Treating <code>ageyr</code> as random is a modeling
+decision. If it is a fixed design variable, a conditional analysis is
+the right one, and <code>semTests</code> does not support it yet.</p>
 </div>
-<div id="why-observed-information-is-the-default" class="section level2">
-<h2>Why observed information is the default</h2>
-<p>Expected information can be inconsistent under general MAR (Kenward
-and Molenberghs, 1998). Observed information reflects the realized
-missingness patterns and sample curvature. Savalei (2010) and Savalei
-and Rosseel (2022) work through the consequences for SEM. The choice can
-matter in finite samples, so we checked it with a large simulation.</p>
-<p>The study crossed:</p>
-<ul>
-<li>multivariate normal and elliptical <span class="math inline">\(t_5\)</span> data</li>
-<li>a correct two-factor CFA and a model omitting a 0.25
-cross-loading</li>
-<li>complete data, 30% MCAR, and 30% MAR</li>
-<li><span class="math inline">\(N = 150, 300, 600,\)</span> and <span class="math inline">\(1200\)</span></li>
-</ul>
-<p>We followed the interval coverage of one free loading and the factor
-covariance. Six standard-error recipes combined three information
-choices with either a model-based covariance or an empirical-score
-sandwich covariance (Yuan &amp; Bentler, 2000).</p>
-<table>
-<caption>Mean 95% coverage across sample sizes, missingness mechanisms,
-and focal parameters. Misspecified cells use centered
-coverage.</caption>
-<colgroup>
-<col width="34%" />
-<col width="15%" />
-<col width="11%" />
-<col width="20%" />
-<col width="16%" />
-</colgroup>
-<thead>
-<tr class="header">
-<th align="left">Method</th>
-<th align="right">Correct, normal</th>
-<th align="right">Correct, t5</th>
-<th align="right">Misspecified, normal</th>
-<th align="right">Misspecified, t5</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td align="left">Expected, model-based</td>
-<td align="right">94.48</td>
-<td align="right">79.41</td>
-<td align="right">92.10</td>
-<td align="right">75.21</td>
-</tr>
-<tr class="even">
-<td align="left">Expected + sandwich</td>
-<td align="right">94.13</td>
-<td align="right">92.45</td>
-<td align="right">91.53</td>
-<td align="right">89.28</td>
-</tr>
-<tr class="odd">
-<td align="left">Observed H1, model-based</td>
-<td align="right">94.67</td>
-<td align="right">79.98</td>
-<td align="right">92.72</td>
-<td align="right">76.38</td>
-</tr>
-<tr class="even">
-<td align="left">Observed H1 + sandwich</td>
-<td align="right">94.39</td>
-<td align="right">92.52</td>
-<td align="right">92.46</td>
-<td align="right">89.98</td>
-</tr>
-<tr class="odd">
-<td align="left">Full observed Hessian, model-based</td>
-<td align="right">94.73</td>
-<td align="right">80.14</td>
-<td align="right">93.46</td>
-<td align="right">77.51</td>
-</tr>
-<tr class="even">
-<td align="left">Full observed Hessian + sandwich</td>
-<td align="right">94.72</td>
-<td align="right">93.64</td>
-<td align="right">94.53</td>
-<td align="right">93.00</td>
-</tr>
-</tbody>
-</table>
-<p>The full observed Hessian with a sandwich covariance came closest to
-95% overall, with its advantage largest under heavy tails and
-misspecification, so <code>semTests</code> uses observed information by
-default. The study targets parameter interval coverage, not the null
-calibration of the goodness-of-fit p-values themselves, which have their
-own deterministic and seeded checks under <code>tools/</code>. The
-<code>&quot;lavaan&quot;</code> convention remains available when the goal is to
-reproduce lavaan’s spectrum.</p>
+<div id="nested-models-is-growth-linear" class="section level2">
+<h2>Nested models: is growth linear?</h2>
+<p><code>Demo.growth</code> has four repeated measurements,
+<code>t1</code> to <code>t4</code>. We delete values at the last two
+waves with probabilities that depend on <code>t1</code>:</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a>growth_data <span class="ot">&lt;-</span> Demo.growth</span>
+<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">20260718</span>)</span>
+<span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a>driver <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(<span class="fu">scale</span>(growth_data<span class="sc">$</span>t1))</span>
+<span id="cb5-4"><a href="#cb5-4" tabindex="-1"></a><span class="cf">for</span> (wave <span class="cf">in</span> <span class="fu">c</span>(<span class="st">&quot;t3&quot;</span>, <span class="st">&quot;t4&quot;</span>)) {</span>
+<span id="cb5-5"><a href="#cb5-5" tabindex="-1"></a>  dropped <span class="ot">&lt;-</span> <span class="fu">runif</span>(<span class="fu">nrow</span>(growth_data)) <span class="sc">&lt;</span> <span class="fu">plogis</span>(<span class="fu">qlogis</span>(.<span class="dv">20</span>) <span class="sc">+</span> .<span class="dv">8</span> <span class="sc">*</span> driver)</span>
+<span id="cb5-6"><a href="#cb5-6" tabindex="-1"></a>  growth_data[dropped, wave] <span class="ot">&lt;-</span> <span class="cn">NA</span></span>
+<span id="cb5-7"><a href="#cb5-7" tabindex="-1"></a>}</span>
+<span id="cb5-8"><a href="#cb5-8" tabindex="-1"></a><span class="fu">colMeans</span>(<span class="fu">is.na</span>(growth_data[<span class="fu">paste0</span>(<span class="st">&quot;t&quot;</span>, <span class="dv">1</span><span class="sc">:</span><span class="dv">4</span>)]))</span>
+<span id="cb5-9"><a href="#cb5-9" tabindex="-1"></a><span class="co">#&gt;    t1    t2    t3    t4 </span></span>
+<span id="cb5-10"><a href="#cb5-10" tabindex="-1"></a><span class="co">#&gt; 0.000 0.000 0.195 0.190</span></span></code></pre></div>
+<p>The linear model fixes the slope loadings at 0, 1, 2, and 3. The
+latent-basis model frees the last two and lets the data choose the shape
+of change, so the linear model is the special case and goes first:</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a>linear <span class="ot">&lt;-</span> <span class="fu">growth</span>(<span class="st">&quot;i =~ 1*t1 + 1*t2 + 1*t3 + 1*t4</span></span>
+<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a><span class="st">                  s =~ 0*t1 + 1*t2 + 2*t3 + 3*t4&quot;</span>,</span>
+<span id="cb6-3"><a href="#cb6-3" tabindex="-1"></a>  growth_data,</span>
+<span id="cb6-4"><a href="#cb6-4" tabindex="-1"></a>  <span class="at">missing =</span> <span class="st">&quot;fiml&quot;</span></span>
+<span id="cb6-5"><a href="#cb6-5" tabindex="-1"></a>)</span>
+<span id="cb6-6"><a href="#cb6-6" tabindex="-1"></a>basis <span class="ot">&lt;-</span> <span class="fu">growth</span>(<span class="st">&quot;i =~ 1*t1 + 1*t2 + 1*t3 + 1*t4</span></span>
+<span id="cb6-7"><a href="#cb6-7" tabindex="-1"></a><span class="st">                 s =~ 0*t1 + 1*t2 + t3 + t4&quot;</span>,</span>
+<span id="cb6-8"><a href="#cb6-8" tabindex="-1"></a>  growth_data,</span>
+<span id="cb6-9"><a href="#cb6-9" tabindex="-1"></a>  <span class="at">missing =</span> <span class="st">&quot;fiml&quot;</span></span>
+<span id="cb6-10"><a href="#cb6-10" tabindex="-1"></a>)</span>
+<span id="cb6-11"><a href="#cb6-11" tabindex="-1"></a>growth_test <span class="ot">&lt;-</span> <span class="fu">pvalues_nested</span>(linear, basis, <span class="at">tests =</span> <span class="fu">c</span>(<span class="st">&quot;SB&quot;</span>, <span class="st">&quot;SS&quot;</span>, <span class="st">&quot;PALL&quot;</span>))</span>
+<span id="cb6-12"><a href="#cb6-12" tabindex="-1"></a>growth_test</span>
+<span id="cb6-13"><a href="#cb6-13" tabindex="-1"></a><span class="co">#&gt;     sb_ml     ss_ml   pall_ml </span></span>
+<span id="cb6-14"><a href="#cb6-14" tabindex="-1"></a><span class="co">#&gt; 0.5683004 0.5672936 0.5680640 </span></span>
+<span id="cb6-15"><a href="#cb6-15" tabindex="-1"></a><span class="co">#&gt; estimator: ML (FIML) | data: continuous | information: observed | df: 2 | FIML convention: observed | nested (method 2000, A.method weighted)</span></span>
+<span id="cb6-16"><a href="#cb6-16" tabindex="-1"></a><span class="fu">coef</span>(basis)[<span class="fu">c</span>(<span class="st">&quot;s=~t3&quot;</span>, <span class="st">&quot;s=~t4&quot;</span>)]</span>
+<span id="cb6-17"><a href="#cb6-17" tabindex="-1"></a><span class="co">#&gt;    s=~t3    s=~t4 </span></span>
+<span id="cb6-18"><a href="#cb6-18" tabindex="-1"></a><span class="co">#&gt; 1.924029 2.869086</span></span></code></pre></div>
+<p>The free loadings are estimated at 1.92 and 2.87, close to 2 and 3,
+and the test gives <em>p</em> = 0.568. The data give no reason to prefer
+the latent-basis model.</p>
+<p>The default restriction matrix, <code>A.method = &quot;weighted&quot;</code>,
+handles this pair, where the larger model frees parameters that the
+smaller one fixes. <code>A.method = &quot;exact&quot;</code> needs the same free
+parameters in both models, as with equality constraints, and refuses
+it:</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a><span class="fu">pvalues_nested</span>(linear, basis, <span class="at">A.method =</span> <span class="st">&quot;exact&quot;</span>)</span>
+<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a><span class="co">#&gt; Error:</span></span>
+<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a><span class="co">#&gt; ! The exact nested restriction requires the same underlying full free-parameter set in both models. Use `A.method = &quot;weighted&quot;` for models represented by different parameter sets.</span></span></code></pre></div>
+<p>When both apply, the <code>&quot;exact&quot;</code> <em>p</em>-value shifts
+slightly with the factor identification, for example
+<code>std.lv = TRUE</code> against marker loadings, while the
+<code>&quot;weighted&quot;</code> <em>p</em>-value does not. lavaan’s
+<code>lavTestLRT(basis, linear, method = &quot;satorra.2000&quot;)</code> on
+<code>MLR</code> fits uses <code>A.method = &quot;delta&quot;</code> and follows
+the fits’ information options, so it need not agree with
+<code>semTests</code>.</p>
 </div>
-<div id="comparing-observed-and-expected-model-information" class="section level2">
-<h2>Comparing observed and expected model information</h2>
-<p>Fit the same model again, changing only lavaan’s model-information
-option:</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a>fit_expected <span class="ot">&lt;-</span> <span class="fu">cfa</span>(</span>
-<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a>  model, fiml_data,</span>
-<span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a>  <span class="at">missing =</span> <span class="st">&quot;fiml&quot;</span>,</span>
-<span id="cb5-4"><a href="#cb5-4" tabindex="-1"></a>  <span class="at">estimator =</span> <span class="st">&quot;MLR&quot;</span>,</span>
-<span id="cb5-5"><a href="#cb5-5" tabindex="-1"></a>  <span class="at">information =</span> <span class="st">&quot;expected&quot;</span></span>
-<span id="cb5-6"><a href="#cb5-6" tabindex="-1"></a>)</span>
-<span id="cb5-7"><a href="#cb5-7" tabindex="-1"></a></span>
-<span id="cb5-8"><a href="#cb5-8" tabindex="-1"></a><span class="fu">max</span>(<span class="fu">abs</span>(<span class="fu">coef</span>(fit_observed) <span class="sc">-</span> <span class="fu">coef</span>(fit_expected)))</span>
-<span id="cb5-9"><a href="#cb5-9" tabindex="-1"></a><span class="co">#&gt; [1] 0</span></span></code></pre></div>
-<p>The information option leaves the fitted parameters unchanged here.
-It can still change the reference distribution:</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a>tests <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&quot;SB&quot;</span>, <span class="st">&quot;SS&quot;</span>, <span class="st">&quot;PEBA4&quot;</span>)</span>
-<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a></span>
-<span id="cb6-3"><a href="#cb6-3" tabindex="-1"></a>comparison <span class="ot">&lt;-</span> <span class="fu">cbind</span>(</span>
-<span id="cb6-4"><a href="#cb6-4" tabindex="-1"></a>  <span class="at">observed_fit__observed_convention =</span> <span class="fu">as.numeric</span>(</span>
-<span id="cb6-5"><a href="#cb6-5" tabindex="-1"></a>    <span class="fu">pvalues</span>(fit_observed, tests, <span class="at">fiml.convention =</span> <span class="st">&quot;observed&quot;</span>)</span>
-<span id="cb6-6"><a href="#cb6-6" tabindex="-1"></a>  ),</span>
-<span id="cb6-7"><a href="#cb6-7" tabindex="-1"></a>  <span class="at">observed_fit__lavaan_convention =</span> <span class="fu">as.numeric</span>(</span>
-<span id="cb6-8"><a href="#cb6-8" tabindex="-1"></a>    <span class="fu">pvalues</span>(fit_observed, tests, <span class="at">fiml.convention =</span> <span class="st">&quot;lavaan&quot;</span>)</span>
-<span id="cb6-9"><a href="#cb6-9" tabindex="-1"></a>  ),</span>
-<span id="cb6-10"><a href="#cb6-10" tabindex="-1"></a>  <span class="at">expected_fit__observed_convention =</span> <span class="fu">as.numeric</span>(</span>
-<span id="cb6-11"><a href="#cb6-11" tabindex="-1"></a>    <span class="fu">pvalues</span>(fit_expected, tests, <span class="at">fiml.convention =</span> <span class="st">&quot;observed&quot;</span>)</span>
-<span id="cb6-12"><a href="#cb6-12" tabindex="-1"></a>  ),</span>
-<span id="cb6-13"><a href="#cb6-13" tabindex="-1"></a>  <span class="at">expected_fit__lavaan_convention =</span> <span class="fu">as.numeric</span>(</span>
-<span id="cb6-14"><a href="#cb6-14" tabindex="-1"></a>    <span class="fu">pvalues</span>(fit_expected, tests, <span class="at">fiml.convention =</span> <span class="st">&quot;lavaan&quot;</span>)</span>
-<span id="cb6-15"><a href="#cb6-15" tabindex="-1"></a>  )</span>
-<span id="cb6-16"><a href="#cb6-16" tabindex="-1"></a>)</span>
-<span id="cb6-17"><a href="#cb6-17" tabindex="-1"></a><span class="fu">rownames</span>(comparison) <span class="ot">&lt;-</span> tests</span>
-<span id="cb6-18"><a href="#cb6-18" tabindex="-1"></a><span class="fu">format</span>(comparison, <span class="at">scientific =</span> <span class="cn">TRUE</span>, <span class="at">digits =</span> <span class="dv">4</span>)</span>
-<span id="cb6-19"><a href="#cb6-19" tabindex="-1"></a><span class="co">#&gt;       observed_fit__observed_convention observed_fit__lavaan_convention</span></span>
-<span id="cb6-20"><a href="#cb6-20" tabindex="-1"></a><span class="co">#&gt; SB    &quot;2.442e-08&quot;                       &quot;1.699e-08&quot;                    </span></span>
-<span id="cb6-21"><a href="#cb6-21" tabindex="-1"></a><span class="co">#&gt; SS    &quot;1.019e-07&quot;                       &quot;6.115e-07&quot;                    </span></span>
-<span id="cb6-22"><a href="#cb6-22" tabindex="-1"></a><span class="co">#&gt; PEBA4 &quot;6.558e-08&quot;                       &quot;1.977e-07&quot;                    </span></span>
-<span id="cb6-23"><a href="#cb6-23" tabindex="-1"></a><span class="co">#&gt;       expected_fit__observed_convention expected_fit__lavaan_convention</span></span>
-<span id="cb6-24"><a href="#cb6-24" tabindex="-1"></a><span class="co">#&gt; SB    &quot;2.442e-08&quot;                       &quot;6.648e-08&quot;                    </span></span>
-<span id="cb6-25"><a href="#cb6-25" tabindex="-1"></a><span class="co">#&gt; SS    &quot;1.019e-07&quot;                       &quot;5.204e-07&quot;                    </span></span>
-<span id="cb6-26"><a href="#cb6-26" tabindex="-1"></a><span class="co">#&gt; PEBA4 &quot;6.558e-08&quot;                       &quot;2.728e-07&quot;</span></span></code></pre></div>
-<p>The two observed-convention columns agree because
-<code>semTests</code> explicitly requests observed information. The
-lavaan-convention columns can differ because that path respects the
-model-information choice stored in the fit.</p>
-<p>Observed information reflects the realized missingness patterns and
-sample curvature. Expected information averages curvature under the
-fitted model. They can be close in well-behaved settings. Missingness
-and non-normality can pull them apart. <code>semTests</code> keeps the
-convention visible in both the function call and the result footer.</p>
-</div>
-<div id="nested-fiml-comparison" class="section level2">
-<h2>Nested FIML comparison</h2>
-<p>For nested models, both fits must use the same raw observations and
-missingness mask:</p>
-<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a>constrained <span class="ot">&lt;-</span> <span class="st">&quot;</span></span>
-<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a><span class="st">  visual  =~ x1 + a*x2 + a*x3</span></span>
-<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a><span class="st">  textual =~ x4 + b*x5 + b*x6</span></span>
-<span id="cb7-4"><a href="#cb7-4" tabindex="-1"></a><span class="st">  speed   =~ x7 + x8 + x9</span></span>
-<span id="cb7-5"><a href="#cb7-5" tabindex="-1"></a><span class="st">&quot;</span></span>
-<span id="cb7-6"><a href="#cb7-6" tabindex="-1"></a></span>
-<span id="cb7-7"><a href="#cb7-7" tabindex="-1"></a>m1 <span class="ot">&lt;-</span> <span class="fu">cfa</span>(</span>
-<span id="cb7-8"><a href="#cb7-8" tabindex="-1"></a>  model, fiml_data,</span>
-<span id="cb7-9"><a href="#cb7-9" tabindex="-1"></a>  <span class="at">missing =</span> <span class="st">&quot;fiml&quot;</span>, <span class="at">estimator =</span> <span class="st">&quot;MLR&quot;</span></span>
-<span id="cb7-10"><a href="#cb7-10" tabindex="-1"></a>)</span>
-<span id="cb7-11"><a href="#cb7-11" tabindex="-1"></a>m0 <span class="ot">&lt;-</span> <span class="fu">cfa</span>(</span>
-<span id="cb7-12"><a href="#cb7-12" tabindex="-1"></a>  constrained, fiml_data,</span>
-<span id="cb7-13"><a href="#cb7-13" tabindex="-1"></a>  <span class="at">missing =</span> <span class="st">&quot;fiml&quot;</span>, <span class="at">estimator =</span> <span class="st">&quot;MLR&quot;</span></span>
-<span id="cb7-14"><a href="#cb7-14" tabindex="-1"></a>)</span></code></pre></div>
-<p>The default delta map works with the local model derivatives and
-tolerates a wider range of equivalent parameterizations. The exact map
-uses the literal parameter restrictions and requires both fits to share
-the same underlying set of free parameters:</p>
-<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a>nested_tests <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&quot;SB&quot;</span>, <span class="st">&quot;SS&quot;</span>, <span class="st">&quot;PEBA2&quot;</span>)</span>
-<span id="cb8-2"><a href="#cb8-2" tabindex="-1"></a>nested <span class="ot">&lt;-</span> <span class="fu">cbind</span>(</span>
-<span id="cb8-3"><a href="#cb8-3" tabindex="-1"></a>  <span class="at">observed_delta =</span> <span class="fu">as.numeric</span>(<span class="fu">pvalues_nested</span>(</span>
-<span id="cb8-4"><a href="#cb8-4" tabindex="-1"></a>    m0, m1,</span>
-<span id="cb8-5"><a href="#cb8-5" tabindex="-1"></a>    <span class="at">tests =</span> nested_tests,</span>
-<span id="cb8-6"><a href="#cb8-6" tabindex="-1"></a>    <span class="at">A.method =</span> <span class="st">&quot;delta&quot;</span>, <span class="at">fiml.convention =</span> <span class="st">&quot;observed&quot;</span></span>
-<span id="cb8-7"><a href="#cb8-7" tabindex="-1"></a>  )),</span>
-<span id="cb8-8"><a href="#cb8-8" tabindex="-1"></a>  <span class="at">observed_exact =</span> <span class="fu">as.numeric</span>(<span class="fu">pvalues_nested</span>(</span>
-<span id="cb8-9"><a href="#cb8-9" tabindex="-1"></a>    m0, m1,</span>
-<span id="cb8-10"><a href="#cb8-10" tabindex="-1"></a>    <span class="at">tests =</span> nested_tests,</span>
-<span id="cb8-11"><a href="#cb8-11" tabindex="-1"></a>    <span class="at">A.method =</span> <span class="st">&quot;exact&quot;</span>, <span class="at">fiml.convention =</span> <span class="st">&quot;observed&quot;</span></span>
-<span id="cb8-12"><a href="#cb8-12" tabindex="-1"></a>  )),</span>
-<span id="cb8-13"><a href="#cb8-13" tabindex="-1"></a>  <span class="at">lavaan_delta =</span> <span class="fu">as.numeric</span>(<span class="fu">pvalues_nested</span>(</span>
-<span id="cb8-14"><a href="#cb8-14" tabindex="-1"></a>    m0, m1,</span>
-<span id="cb8-15"><a href="#cb8-15" tabindex="-1"></a>    <span class="at">tests =</span> nested_tests,</span>
-<span id="cb8-16"><a href="#cb8-16" tabindex="-1"></a>    <span class="at">A.method =</span> <span class="st">&quot;delta&quot;</span>, <span class="at">fiml.convention =</span> <span class="st">&quot;lavaan&quot;</span></span>
-<span id="cb8-17"><a href="#cb8-17" tabindex="-1"></a>  ))</span>
-<span id="cb8-18"><a href="#cb8-18" tabindex="-1"></a>)</span>
-<span id="cb8-19"><a href="#cb8-19" tabindex="-1"></a><span class="fu">rownames</span>(nested) <span class="ot">&lt;-</span> nested_tests</span>
-<span id="cb8-20"><a href="#cb8-20" tabindex="-1"></a><span class="fu">format</span>(nested, <span class="at">scientific =</span> <span class="cn">TRUE</span>, <span class="at">digits =</span> <span class="dv">4</span>)</span>
-<span id="cb8-21"><a href="#cb8-21" tabindex="-1"></a><span class="co">#&gt;       observed_delta observed_exact lavaan_delta</span></span>
-<span id="cb8-22"><a href="#cb8-22" tabindex="-1"></a><span class="co">#&gt; SB    &quot;3.392e-02&quot;    &quot;4.335e-02&quot;    &quot;1.530e-02&quot; </span></span>
-<span id="cb8-23"><a href="#cb8-23" tabindex="-1"></a><span class="co">#&gt; SS    &quot;3.551e-02&quot;    &quot;4.566e-02&quot;    &quot;1.752e-02&quot; </span></span>
-<span id="cb8-24"><a href="#cb8-24" tabindex="-1"></a><span class="co">#&gt; PEBA2 &quot;3.431e-02&quot;    &quot;4.384e-02&quot;    &quot;1.609e-02&quot;</span></span></code></pre></div>
-<p>The delta default is the more flexible choice when equivalent models
-have different parameter tables. Use exact when the hypothesis is
-naturally written as a literal restriction on one shared set of free
-parameters.</p>
-</div>
-<div id="fiml-with-several-groups" class="section level2">
-<h2>FIML with several groups</h2>
-<p>Grouped models use the same interface. Here we compare a configural
-model with one that holds the factor loadings equal across schools:</p>
-<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a>mg1 <span class="ot">&lt;-</span> <span class="fu">cfa</span>(</span>
-<span id="cb9-2"><a href="#cb9-2" tabindex="-1"></a>  model, fiml_data,</span>
-<span id="cb9-3"><a href="#cb9-3" tabindex="-1"></a>  <span class="at">group =</span> <span class="st">&quot;school&quot;</span>,</span>
-<span id="cb9-4"><a href="#cb9-4" tabindex="-1"></a>  <span class="at">missing =</span> <span class="st">&quot;fiml&quot;</span>, <span class="at">estimator =</span> <span class="st">&quot;MLR&quot;</span></span>
-<span id="cb9-5"><a href="#cb9-5" tabindex="-1"></a>)</span>
-<span id="cb9-6"><a href="#cb9-6" tabindex="-1"></a>mg0 <span class="ot">&lt;-</span> <span class="fu">cfa</span>(</span>
-<span id="cb9-7"><a href="#cb9-7" tabindex="-1"></a>  model, fiml_data,</span>
-<span id="cb9-8"><a href="#cb9-8" tabindex="-1"></a>  <span class="at">group =</span> <span class="st">&quot;school&quot;</span>, <span class="at">group.equal =</span> <span class="st">&quot;loadings&quot;</span>,</span>
-<span id="cb9-9"><a href="#cb9-9" tabindex="-1"></a>  <span class="at">missing =</span> <span class="st">&quot;fiml&quot;</span>, <span class="at">estimator =</span> <span class="st">&quot;MLR&quot;</span></span>
-<span id="cb9-10"><a href="#cb9-10" tabindex="-1"></a>)</span>
-<span id="cb9-11"><a href="#cb9-11" tabindex="-1"></a></span>
-<span id="cb9-12"><a href="#cb9-12" tabindex="-1"></a><span class="fu">pvalues</span>(mg1, <span class="fu">c</span>(<span class="st">&quot;SB&quot;</span>, <span class="st">&quot;SS&quot;</span>, <span class="st">&quot;PEBA4&quot;</span>))</span>
-<span id="cb9-13"><a href="#cb9-13" tabindex="-1"></a><span class="co">#&gt;        sb_ml        ss_ml     peba4_ml </span></span>
-<span id="cb9-14"><a href="#cb9-14" tabindex="-1"></a><span class="co">#&gt; 5.066665e-07 4.715279e-06 1.618893e-06 </span></span>
-<span id="cb9-15"><a href="#cb9-15" tabindex="-1"></a><span class="co">#&gt; estimator: ML (MLR) (FIML) | data: continuous | information: observed | df: 48 | FIML convention: observed</span></span>
-<span id="cb9-16"><a href="#cb9-16" tabindex="-1"></a><span class="fu">pvalues_nested</span>(mg0, mg1, <span class="at">tests =</span> <span class="fu">c</span>(<span class="st">&quot;SB&quot;</span>, <span class="st">&quot;SS&quot;</span>, <span class="st">&quot;PEBA4&quot;</span>))</span>
-<span id="cb9-17"><a href="#cb9-17" tabindex="-1"></a><span class="co">#&gt;     sb_ml     ss_ml  peba4_ml </span></span>
-<span id="cb9-18"><a href="#cb9-18" tabindex="-1"></a><span class="co">#&gt; 0.2253208 0.2320262 0.2254550 </span></span>
-<span id="cb9-19"><a href="#cb9-19" tabindex="-1"></a><span class="co">#&gt; estimator: ML (MLR) (FIML) | data: continuous | information: observed | df: 6 | FIML convention: observed | nested (method 2000, A.method delta)</span></span></code></pre></div>
-<p>The groups may have different sample sizes and missingness patterns.
-The two fits in a nested comparison still need the same observations and
-missingness mask within each group.</p>
-</div>
-<div id="what-to-report" class="section level2">
-<h2>What to report</h2>
-<p>A reproducible FIML analysis should report:</p>
-<ul>
-<li>the missingness pattern and its substantive justification</li>
-<li>lavaan’s estimator and <code>information</code> option</li>
-<li>the <code>semTests</code> <code>fiml.convention</code></li>
-<li>the nested <code>A.method</code>, when applicable</li>
-<li>the requested p-value method and base statistic</li>
-</ul>
-<p>The result footer and <code>attr(result, &quot;semtests&quot;)</code> retain
-these <code>semTests</code> choices with the returned p-values.</p>
+<div id="several-groups" class="section level2">
+<h2>Several groups</h2>
+<p>Grouped models use the same calls. Here the factor loadings are held
+equal across the two schools:</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a>configural <span class="ot">&lt;-</span> <span class="fu">cfa</span>(model, fiml_data, <span class="at">group =</span> <span class="st">&quot;school&quot;</span>, <span class="at">missing =</span> <span class="st">&quot;fiml&quot;</span>)</span>
+<span id="cb8-2"><a href="#cb8-2" tabindex="-1"></a>equal_loadings <span class="ot">&lt;-</span> <span class="fu">cfa</span>(model, fiml_data,</span>
+<span id="cb8-3"><a href="#cb8-3" tabindex="-1"></a>  <span class="at">group =</span> <span class="st">&quot;school&quot;</span>, <span class="at">group.equal =</span> <span class="st">&quot;loadings&quot;</span>, <span class="at">missing =</span> <span class="st">&quot;fiml&quot;</span></span>
+<span id="cb8-4"><a href="#cb8-4" tabindex="-1"></a>)</span>
+<span id="cb8-5"><a href="#cb8-5" tabindex="-1"></a><span class="fu">pvalues_nested</span>(equal_loadings, configural)</span>
+<span id="cb8-6"><a href="#cb8-6" tabindex="-1"></a><span class="co">#&gt;   pall_ml </span></span>
+<span id="cb8-7"><a href="#cb8-7" tabindex="-1"></a><span class="co">#&gt; 0.2231991 </span></span>
+<span id="cb8-8"><a href="#cb8-8" tabindex="-1"></a><span class="co">#&gt; estimator: ML (FIML) | data: continuous | information: observed | df: 6 | FIML convention: observed | nested (method 2000, A.method weighted)</span></span></code></pre></div>
+<p>The groups may differ in size and missingness pattern, but the two
+fits must use the same observations and missingness pattern within each
+group.</p>
 </div>
 <div id="references" class="section level2">
 <h2>References</h2>
 <p>Kenward, M. G., &amp; Molenberghs, G. (1998). Likelihood based
 frequentist inference when data are missing at random. <em>Statistical
 Science</em>, 13(3), 236–247. <a href="https://doi.org/10.1214/ss/1028905886" class="uri">https://doi.org/10.1214/ss/1028905886</a></p>
+<p>Satorra, A. (2000). Scaled and adjusted restricted tests in
+multi-sample analysis of moment structures. In R. D. H. Heijmans, D. S.
+G. Pollock, &amp; A. Satorra (Eds.), <em>Innovations in Multivariate
+Statistical Analysis</em> (pp. 233–247). Kluwer Academic. <a href="https://doi.org/10.1007/978-1-4615-4603-0_17" class="uri">https://doi.org/10.1007/978-1-4615-4603-0_17</a></p>
 <p>Savalei, V. (2010). Expected versus observed information in SEM with
 incomplete normal and nonnormal data. <em>Psychological Methods</em>,
 15(4), 352–367. <a href="https://doi.org/10.1037/a0020143" class="uri">https://doi.org/10.1037/a0020143</a></p>
 <p>Savalei, V., &amp; Rosseel, Y. (2022). Computational options for
 standard errors and test statistics with incomplete normal and nonnormal
 data in SEM. <em>Structural Equation Modeling</em>, 29(2), 163–181. <a href="https://doi.org/10.1080/10705511.2021.1877548" class="uri">https://doi.org/10.1080/10705511.2021.1877548</a></p>
-<p>Satorra, A. (2000). Scaled and adjusted restricted tests in
-multi-sample analysis of moment structures. In R. D. H. Heijmans, D. S.
-G. Pollock, &amp; A. Satorra (Eds.), <em>Innovations in Multivariate
-Statistical Analysis</em> (pp. 233–247). Kluwer Academic. <a href="https://doi.org/10.1007/978-1-4615-4603-0_17" class="uri">https://doi.org/10.1007/978-1-4615-4603-0_17</a></p>
-<p>Yuan, K.-H., &amp; Bentler, P. M. (2000). Three likelihood-based
-methods for mean and covariance structure analysis with nonnormal
-missing data. <em>Sociological Methodology</em>, 30, 165–200. <a href="https://doi.org/10.1111/0081-1750.00078" class="uri">https://doi.org/10.1111/0081-1750.00078</a></p>
 </div>
 
 

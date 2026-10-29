@@ -12,7 +12,7 @@
 
 
 
-<title>Categorical and mixed-indicator models</title>
+<title>Ordinal indicators and measurement invariance</title>
 
 <script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
 // be compatible with the behavior of Pandoc < 2.8).
@@ -337,21 +337,30 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 
 
 
-<h1 class="title toc-ignore">Categorical and mixed-indicator models</h1>
+<h1 class="title toc-ignore">Ordinal indicators and measurement
+invariance</h1>
 
 
 
 <div id="scope" class="section level2">
 <h2>Scope</h2>
-<p>This guide covers ordered and mixed indicators. The implementation
-covers lavaan’s DWLS and ULS families, one or several groups, and
-listwise or pairwise missingness. The supported paths have also been
-checked against a separate implementation.</p>
-<p>For these models, <code>semTests</code> uses lavaan’s unscaled
-statistic and the eigenvalues stored in
-<code>lavInspect(fit, &quot;UGamma&quot;)</code>. The Du–Bentler <code>UG</code>
-option and the continuous-data <code>RLS</code> statistic belong to a
-different setting, so test names here do not use either suffix.</p>
+<p><code>semTests</code> supports ordered and mixed indicators fitted
+with lavaan’s DWLS family (<code>DWLS</code>, <code>WLSM</code>,
+<code>WLSMV</code>, <code>WLSMVS</code>) and ULS family
+(<code>ULS</code>, <code>ULSM</code>, <code>ULSMV</code>), with one or
+several groups and listwise or pairwise deletion. The eigenvalues come
+from <code>lavInspect(fit, &quot;UGamma&quot;)</code> and the statistic is
+lavaan’s unscaled one. The <code>UG</code> and <code>RLS</code> options
+apply to continuous data only.</p>
+<p>Full WLS is refused. Its weight matrix is the inverse of <span class="math inline">\(\Gamma\)</span>, so every eigenvalue equals 1 and
+every correction would return the ordinary chi-square
+<em>p</em>-value.</p>
+</div>
+<div id="data" class="section level2">
+<h2>Data</h2>
+<p>The examples cut the nine ability scores of
+<code>HolzingerSwineford1939</code> at their quartiles, giving four
+ordered categories per indicator.</p>
 <div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="fu">library</span>(<span class="st">&quot;semTests&quot;</span>)</span>
 <span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a><span class="fu">library</span>(<span class="st">&quot;lavaan&quot;</span>)</span>
 <span id="cb1-3"><a href="#cb1-3" tabindex="-1"></a></span>
@@ -360,199 +369,114 @@ different setting, so test names here do not use either suffix.</p>
 <span id="cb1-6"><a href="#cb1-6" tabindex="-1"></a><span class="st">  textual =~ x4 + x5 + x6</span></span>
 <span id="cb1-7"><a href="#cb1-7" tabindex="-1"></a><span class="st">  speed   =~ x7 + x8 + x9</span></span>
 <span id="cb1-8"><a href="#cb1-8" tabindex="-1"></a><span class="st">&quot;</span></span>
-<span id="cb1-9"><a href="#cb1-9" tabindex="-1"></a></span>
-<span id="cb1-10"><a href="#cb1-10" tabindex="-1"></a>ordered_names <span class="ot">&lt;-</span> <span class="fu">paste0</span>(<span class="st">&quot;x&quot;</span>, <span class="dv">1</span><span class="sc">:</span><span class="dv">9</span>)</span>
-<span id="cb1-11"><a href="#cb1-11" tabindex="-1"></a>ordinal_data <span class="ot">&lt;-</span> HolzingerSwineford1939</span>
-<span id="cb1-12"><a href="#cb1-12" tabindex="-1"></a>ordinal_data[ordered_names] <span class="ot">&lt;-</span> <span class="fu">lapply</span>(</span>
-<span id="cb1-13"><a href="#cb1-13" tabindex="-1"></a>  ordinal_data[ordered_names],</span>
-<span id="cb1-14"><a href="#cb1-14" tabindex="-1"></a>  <span class="cf">function</span>(x) {</span>
-<span id="cb1-15"><a href="#cb1-15" tabindex="-1"></a>    <span class="fu">ordered</span>(<span class="fu">cut</span>(</span>
-<span id="cb1-16"><a href="#cb1-16" tabindex="-1"></a>      x,</span>
-<span id="cb1-17"><a href="#cb1-17" tabindex="-1"></a>      <span class="at">breaks =</span> <span class="fu">c</span>(<span class="sc">-</span><span class="cn">Inf</span>, <span class="fu">quantile</span>(x, <span class="fu">c</span>(.<span class="dv">33</span>, .<span class="dv">67</span>)), <span class="cn">Inf</span>),</span>
-<span id="cb1-18"><a href="#cb1-18" tabindex="-1"></a>      <span class="at">include.lowest =</span> <span class="cn">TRUE</span></span>
-<span id="cb1-19"><a href="#cb1-19" tabindex="-1"></a>    ))</span>
-<span id="cb1-20"><a href="#cb1-20" tabindex="-1"></a>  }</span>
-<span id="cb1-21"><a href="#cb1-21" tabindex="-1"></a>)</span></code></pre></div>
-<p>The cuts give a reproducible teaching example. They are not a
-recommendation to turn continuous measurements into categories.</p>
+<span id="cb1-9"><a href="#cb1-9" tabindex="-1"></a>quartiles <span class="ot">&lt;-</span> <span class="cf">function</span>(x) {</span>
+<span id="cb1-10"><a href="#cb1-10" tabindex="-1"></a>  <span class="fu">ordered</span>(<span class="fu">cut</span>(x, <span class="fu">c</span>(<span class="sc">-</span><span class="cn">Inf</span>, <span class="fu">quantile</span>(x, <span class="fu">c</span>(.<span class="dv">25</span>, .<span class="dv">50</span>, .<span class="dv">75</span>)), <span class="cn">Inf</span>)))</span>
+<span id="cb1-11"><a href="#cb1-11" tabindex="-1"></a>}</span>
+<span id="cb1-12"><a href="#cb1-12" tabindex="-1"></a></span>
+<span id="cb1-13"><a href="#cb1-13" tabindex="-1"></a>items <span class="ot">&lt;-</span> <span class="fu">paste0</span>(<span class="st">&quot;x&quot;</span>, <span class="dv">1</span><span class="sc">:</span><span class="dv">9</span>)</span>
+<span id="cb1-14"><a href="#cb1-14" tabindex="-1"></a>ordinal_data <span class="ot">&lt;-</span> HolzingerSwineford1939</span>
+<span id="cb1-15"><a href="#cb1-15" tabindex="-1"></a>ordinal_data[items] <span class="ot">&lt;-</span> <span class="fu">lapply</span>(ordinal_data[items], quartiles)</span></code></pre></div>
 </div>
-<div id="overall-goodness-of-fit" class="section level2">
-<h2>Overall goodness of fit</h2>
-<p>lavaan’s <code>WLSMV</code> shortcut fits the DWLS family and
-requests a mean-and-variance-adjusted test. From there,
-<code>pvalues()</code> works as usual:</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a>fit_ordinal <span class="ot">&lt;-</span> <span class="fu">cfa</span>(</span>
-<span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a>  model, ordinal_data,</span>
-<span id="cb2-3"><a href="#cb2-3" tabindex="-1"></a>  <span class="at">ordered =</span> ordered_names,</span>
-<span id="cb2-4"><a href="#cb2-4" tabindex="-1"></a>  <span class="at">estimator =</span> <span class="st">&quot;WLSMV&quot;</span></span>
-<span id="cb2-5"><a href="#cb2-5" tabindex="-1"></a>)</span>
-<span id="cb2-6"><a href="#cb2-6" tabindex="-1"></a></span>
-<span id="cb2-7"><a href="#cb2-7" tabindex="-1"></a><span class="fu">pvalues</span>(fit_ordinal, <span class="fu">c</span>(<span class="st">&quot;STD&quot;</span>, <span class="st">&quot;SB&quot;</span>, <span class="st">&quot;SS&quot;</span>, <span class="st">&quot;ALL&quot;</span>, <span class="st">&quot;PEBA4&quot;</span>))</span>
-<span id="cb2-8"><a href="#cb2-8" tabindex="-1"></a><span class="co">#&gt;       std_ml        sb_ml        ss_ml       all_ml     peba4_ml </span></span>
-<span id="cb2-9"><a href="#cb2-9" tabindex="-1"></a><span class="co">#&gt; 5.741040e-03 1.579645e-06 2.165026e-05 1.204187e-04 8.080871e-06 </span></span>
-<span id="cb2-10"><a href="#cb2-10" tabindex="-1"></a><span class="co">#&gt; estimator: DWLS (WLSMV) | data: categorical | information: expected | df: 24</span></span></code></pre></div>
-<p>The footer records both the base estimator (<code>DWLS</code>) and
-the estimator requested from lavaan (<code>WLSMV</code>). It also
-records the categorical parameterization.</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a><span class="fu">attr</span>(<span class="fu">pvalues</span>(fit_ordinal, <span class="st">&quot;PEBA4&quot;</span>), <span class="st">&quot;semtests&quot;</span>)</span>
-<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a><span class="co">#&gt; $estimator</span></span>
-<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a><span class="co">#&gt; [1] &quot;DWLS&quot;</span></span>
-<span id="cb3-4"><a href="#cb3-4" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb3-5"><a href="#cb3-5" tabindex="-1"></a><span class="co">#&gt; $estimator_requested</span></span>
-<span id="cb3-6"><a href="#cb3-6" tabindex="-1"></a><span class="co">#&gt; [1] &quot;WLSMV&quot;</span></span>
-<span id="cb3-7"><a href="#cb3-7" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb3-8"><a href="#cb3-8" tabindex="-1"></a><span class="co">#&gt; $lavaan_test</span></span>
-<span id="cb3-9"><a href="#cb3-9" tabindex="-1"></a><span class="co">#&gt; [1] &quot;standard&quot;       &quot;scaled.shifted&quot;</span></span>
-<span id="cb3-10"><a href="#cb3-10" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb3-11"><a href="#cb3-11" tabindex="-1"></a><span class="co">#&gt; $information</span></span>
-<span id="cb3-12"><a href="#cb3-12" tabindex="-1"></a><span class="co">#&gt; [1] &quot;expected&quot; &quot;expected&quot;</span></span>
-<span id="cb3-13"><a href="#cb3-13" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb3-14"><a href="#cb3-14" tabindex="-1"></a><span class="co">#&gt; $data_type</span></span>
-<span id="cb3-15"><a href="#cb3-15" tabindex="-1"></a><span class="co">#&gt; [1] &quot;categorical&quot;</span></span>
-<span id="cb3-16"><a href="#cb3-16" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb3-17"><a href="#cb3-17" tabindex="-1"></a><span class="co">#&gt; $missing</span></span>
-<span id="cb3-18"><a href="#cb3-18" tabindex="-1"></a><span class="co">#&gt; [1] &quot;listwise&quot;</span></span>
-<span id="cb3-19"><a href="#cb3-19" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb3-20"><a href="#cb3-20" tabindex="-1"></a><span class="co">#&gt; $df</span></span>
-<span id="cb3-21"><a href="#cb3-21" tabindex="-1"></a><span class="co">#&gt; [1] 24</span></span>
-<span id="cb3-22"><a href="#cb3-22" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb3-23"><a href="#cb3-23" tabindex="-1"></a><span class="co">#&gt; $nested</span></span>
-<span id="cb3-24"><a href="#cb3-24" tabindex="-1"></a><span class="co">#&gt; [1] FALSE</span></span>
-<span id="cb3-25"><a href="#cb3-25" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb3-26"><a href="#cb3-26" tabindex="-1"></a><span class="co">#&gt; $method</span></span>
-<span id="cb3-27"><a href="#cb3-27" tabindex="-1"></a><span class="co">#&gt; [1] NA</span></span>
-<span id="cb3-28"><a href="#cb3-28" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb3-29"><a href="#cb3-29" tabindex="-1"></a><span class="co">#&gt; $parameterization</span></span>
-<span id="cb3-30"><a href="#cb3-30" tabindex="-1"></a><span class="co">#&gt; [1] &quot;delta&quot;</span></span>
-<span id="cb3-31"><a href="#cb3-31" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb3-32"><a href="#cb3-32" tabindex="-1"></a><span class="co">#&gt; $spectrum_source</span></span>
-<span id="cb3-33"><a href="#cb3-33" tabindex="-1"></a><span class="co">#&gt; [1] &quot;lavaan UGamma&quot;</span></span>
-<span id="cb3-34"><a href="#cb3-34" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb3-35"><a href="#cb3-35" tabindex="-1"></a><span class="co">#&gt; $requested_tests</span></span>
-<span id="cb3-36"><a href="#cb3-36" tabindex="-1"></a><span class="co">#&gt; [1] &quot;PEBA4&quot;</span></span>
-<span id="cb3-37"><a href="#cb3-37" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb3-38"><a href="#cb3-38" tabindex="-1"></a><span class="co">#&gt; $statistic</span></span>
-<span id="cb3-39"><a href="#cb3-39" tabindex="-1"></a><span class="co">#&gt; PEBA4 </span></span>
-<span id="cb3-40"><a href="#cb3-40" tabindex="-1"></a><span class="co">#&gt;  &quot;ml&quot; </span></span>
-<span id="cb3-41"><a href="#cb3-41" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb3-42"><a href="#cb3-42" tabindex="-1"></a><span class="co">#&gt; $gamma</span></span>
-<span id="cb3-43"><a href="#cb3-43" tabindex="-1"></a><span class="co">#&gt;    PEBA4 </span></span>
-<span id="cb3-44"><a href="#cb3-44" tabindex="-1"></a><span class="co">#&gt; &quot;biased&quot;</span></span></code></pre></div>
-<p>The <code>SB</code> and <code>SS</code> results are a quick check
-against lavaan’s public robust corrections. The eigenvalue methods use
-more of the reference distribution, so they need not give the same
-p-value.</p>
-</div>
-<div id="estimator-families" class="section level2">
-<h2>Estimator families</h2>
-<p>The accepted shortcuts include:</p>
-<ul>
-<li>DWLS, WLSM, WLSMV, and WLSMVS</li>
-<li>ULS, ULSM, and ULSMV</li>
-</ul>
-<p>Full WLS/ADF is refused. Its weight already produces an identity
-spectrum, so every correction reduces to the ordinary chi-square. There
-is no extra correction for <code>semTests</code> to make.</p>
+<div id="overall-fit" class="section level2">
+<h2>Overall fit</h2>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a>fit <span class="ot">&lt;-</span> <span class="fu">cfa</span>(model, ordinal_data, <span class="at">ordered =</span> items, <span class="at">estimator =</span> <span class="st">&quot;WLSMV&quot;</span>)</span>
+<span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a><span class="fu">pvalues</span>(fit, <span class="fu">c</span>(<span class="st">&quot;STD&quot;</span>, <span class="st">&quot;SB&quot;</span>, <span class="st">&quot;SS&quot;</span>, <span class="st">&quot;ALL&quot;</span>, <span class="st">&quot;PEBA4&quot;</span>))</span>
+<span id="cb2-3"><a href="#cb2-3" tabindex="-1"></a><span class="co">#&gt;       std_ml        sb_ml        ss_ml       all_ml     peba4_ml </span></span>
+<span id="cb2-4"><a href="#cb2-4" tabindex="-1"></a><span class="co">#&gt; 8.987813e-04 6.279085e-09 5.051364e-07 1.468198e-05 1.427912e-07 </span></span>
+<span id="cb2-5"><a href="#cb2-5" tabindex="-1"></a><span class="co">#&gt; estimator: DWLS (WLSMV) | data: categorical | information: expected | df: 24</span></span></code></pre></div>
+<p><code>SS</code> is the mean-and-variance adjusted test that
+<code>WLSMV</code> reports, and <code>SB</code> is the mean-adjusted
+test that <code>WLSM</code> reports:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a><span class="fu">as.numeric</span>(<span class="fu">fitMeasures</span>(fit, <span class="st">&quot;pvalue.scaled&quot;</span>))</span>
+<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a><span class="co">#&gt; [1] 5.051364e-07</span></span></code></pre></div>
 </div>
 <div id="mixed-indicators" class="section level2">
 <h2>Mixed indicators</h2>
-<p>Only variables named in <code>ordered</code> are treated as
-categorical. The remaining indicators stay continuous:</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a>mixed_names <span class="ot">&lt;-</span> <span class="fu">paste0</span>(<span class="st">&quot;x&quot;</span>, <span class="dv">1</span><span class="sc">:</span><span class="dv">6</span>)</span>
-<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a>mixed_data <span class="ot">&lt;-</span> HolzingerSwineford1939</span>
-<span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a>mixed_data[mixed_names] <span class="ot">&lt;-</span> <span class="fu">lapply</span>(</span>
-<span id="cb4-4"><a href="#cb4-4" tabindex="-1"></a>  mixed_data[mixed_names],</span>
-<span id="cb4-5"><a href="#cb4-5" tabindex="-1"></a>  <span class="cf">function</span>(x) {</span>
-<span id="cb4-6"><a href="#cb4-6" tabindex="-1"></a>    <span class="fu">ordered</span>(<span class="fu">cut</span>(</span>
-<span id="cb4-7"><a href="#cb4-7" tabindex="-1"></a>      x,</span>
-<span id="cb4-8"><a href="#cb4-8" tabindex="-1"></a>      <span class="at">breaks =</span> <span class="fu">c</span>(<span class="sc">-</span><span class="cn">Inf</span>, <span class="fu">quantile</span>(x, <span class="fu">c</span>(.<span class="dv">33</span>, .<span class="dv">67</span>)), <span class="cn">Inf</span>),</span>
-<span id="cb4-9"><a href="#cb4-9" tabindex="-1"></a>      <span class="at">include.lowest =</span> <span class="cn">TRUE</span></span>
-<span id="cb4-10"><a href="#cb4-10" tabindex="-1"></a>    ))</span>
-<span id="cb4-11"><a href="#cb4-11" tabindex="-1"></a>  }</span>
-<span id="cb4-12"><a href="#cb4-12" tabindex="-1"></a>)</span>
-<span id="cb4-13"><a href="#cb4-13" tabindex="-1"></a></span>
-<span id="cb4-14"><a href="#cb4-14" tabindex="-1"></a>fit_mixed <span class="ot">&lt;-</span> <span class="fu">cfa</span>(</span>
-<span id="cb4-15"><a href="#cb4-15" tabindex="-1"></a>  model, mixed_data,</span>
-<span id="cb4-16"><a href="#cb4-16" tabindex="-1"></a>  <span class="at">ordered =</span> mixed_names,</span>
-<span id="cb4-17"><a href="#cb4-17" tabindex="-1"></a>  <span class="at">estimator =</span> <span class="st">&quot;WLSMV&quot;</span></span>
-<span id="cb4-18"><a href="#cb4-18" tabindex="-1"></a>)</span>
-<span id="cb4-19"><a href="#cb4-19" tabindex="-1"></a><span class="fu">pvalues</span>(fit_mixed, <span class="st">&quot;PEBA4&quot;</span>)</span>
-<span id="cb4-20"><a href="#cb4-20" tabindex="-1"></a><span class="co">#&gt;     peba4_ml </span></span>
-<span id="cb4-21"><a href="#cb4-21" tabindex="-1"></a><span class="co">#&gt; 2.836827e-06 </span></span>
-<span id="cb4-22"><a href="#cb4-22" tabindex="-1"></a><span class="co">#&gt; estimator: DWLS (WLSMV) | data: categorical | information: expected | df: 24</span></span></code></pre></div>
-<p>Mixed models combine thresholds with the usual covariance and mean
-information. Lavaan has already done that bookkeeping, and
-<code>semTests</code> reads the resulting spectrum directly.</p>
+<p>Only the variables named in <code>ordered</code> are treated as
+ordinal. Here the <code>speed</code> indicators stay continuous:</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a>mixed_data <span class="ot">&lt;-</span> HolzingerSwineford1939</span>
+<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a>mixed_data[items[<span class="dv">1</span><span class="sc">:</span><span class="dv">6</span>]] <span class="ot">&lt;-</span> <span class="fu">lapply</span>(mixed_data[items[<span class="dv">1</span><span class="sc">:</span><span class="dv">6</span>]], quartiles)</span>
+<span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a>fit_mixed <span class="ot">&lt;-</span> <span class="fu">cfa</span>(model, mixed_data, <span class="at">ordered =</span> items[<span class="dv">1</span><span class="sc">:</span><span class="dv">6</span>], <span class="at">estimator =</span> <span class="st">&quot;WLSMV&quot;</span>)</span>
+<span id="cb4-4"><a href="#cb4-4" tabindex="-1"></a><span class="fu">pvalues</span>(fit_mixed)</span>
+<span id="cb4-5"><a href="#cb4-5" tabindex="-1"></a><span class="co">#&gt;     peba4_ml </span></span>
+<span id="cb4-6"><a href="#cb4-6" tabindex="-1"></a><span class="co">#&gt; 3.039647e-07 </span></span>
+<span id="cb4-7"><a href="#cb4-7" tabindex="-1"></a><span class="co">#&gt; estimator: DWLS (WLSMV) | data: categorical | information: expected | df: 24</span></span></code></pre></div>
 </div>
-<div id="pairwise-missingness" class="section level2">
-<h2>Pairwise missingness</h2>
-<p>With pairwise estimation, lavaan uses the observations available for
-each statistic:</p>
+<div id="pairwise-deletion" class="section level2">
+<h2>Pairwise deletion</h2>
+<p>With <code>missing = &quot;pairwise&quot;</code>, lavaan estimates each
+threshold and polychoric correlation from the cases observed on the
+variables involved, and <code>semTests</code> uses the resulting sample
+statistics and <code>UGamma</code>. Pairwise deletion is consistent when
+the data are missing completely at random.</p>
 <div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a>pairwise_data <span class="ot">&lt;-</span> ordinal_data</span>
 <span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">314</span>)</span>
-<span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a><span class="cf">for</span> (variable <span class="cf">in</span> ordered_names) {</span>
-<span id="cb5-4"><a href="#cb5-4" tabindex="-1"></a>  pairwise_data[<span class="fu">sample</span>(<span class="fu">nrow</span>(pairwise_data), <span class="dv">35</span>), variable] <span class="ot">&lt;-</span> <span class="cn">NA</span></span>
+<span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a><span class="cf">for</span> (item <span class="cf">in</span> items) {</span>
+<span id="cb5-4"><a href="#cb5-4" tabindex="-1"></a>  pairwise_data[<span class="fu">sample</span>(<span class="fu">nrow</span>(pairwise_data), <span class="dv">35</span>), item] <span class="ot">&lt;-</span> <span class="cn">NA</span></span>
 <span id="cb5-5"><a href="#cb5-5" tabindex="-1"></a>}</span>
-<span id="cb5-6"><a href="#cb5-6" tabindex="-1"></a></span>
-<span id="cb5-7"><a href="#cb5-7" tabindex="-1"></a>fit_pairwise <span class="ot">&lt;-</span> <span class="fu">cfa</span>(</span>
-<span id="cb5-8"><a href="#cb5-8" tabindex="-1"></a>  model, pairwise_data,</span>
-<span id="cb5-9"><a href="#cb5-9" tabindex="-1"></a>  <span class="at">ordered =</span> ordered_names,</span>
-<span id="cb5-10"><a href="#cb5-10" tabindex="-1"></a>  <span class="at">estimator =</span> <span class="st">&quot;WLSMV&quot;</span>,</span>
-<span id="cb5-11"><a href="#cb5-11" tabindex="-1"></a>  <span class="at">missing =</span> <span class="st">&quot;pairwise&quot;</span></span>
-<span id="cb5-12"><a href="#cb5-12" tabindex="-1"></a>)</span>
-<span id="cb5-13"><a href="#cb5-13" tabindex="-1"></a><span class="fu">pvalues</span>(fit_pairwise, <span class="fu">c</span>(<span class="st">&quot;SB&quot;</span>, <span class="st">&quot;SS&quot;</span>, <span class="st">&quot;PEBA4&quot;</span>))</span>
-<span id="cb5-14"><a href="#cb5-14" tabindex="-1"></a><span class="co">#&gt;        sb_ml        ss_ml     peba4_ml </span></span>
-<span id="cb5-15"><a href="#cb5-15" tabindex="-1"></a><span class="co">#&gt; 0.0006333295 0.0020325368 0.0010972907 </span></span>
-<span id="cb5-16"><a href="#cb5-16" tabindex="-1"></a><span class="co">#&gt; estimator: DWLS (WLSMV) | data: categorical | information: expected | df: 24</span></span></code></pre></div>
-<p><code>semTests</code> follows lavaan’s pairwise sample-statistic and
-<code>UGamma</code> calculation. Pairwise deletion brings its own
-assumptions about missingness, so report and defend that choice
-separately. It is not FIML.</p>
+<span id="cb5-6"><a href="#cb5-6" tabindex="-1"></a>fit_pairwise <span class="ot">&lt;-</span> <span class="fu">cfa</span>(model, pairwise_data,</span>
+<span id="cb5-7"><a href="#cb5-7" tabindex="-1"></a>  <span class="at">ordered =</span> items, <span class="at">estimator =</span> <span class="st">&quot;WLSMV&quot;</span>, <span class="at">missing =</span> <span class="st">&quot;pairwise&quot;</span></span>
+<span id="cb5-8"><a href="#cb5-8" tabindex="-1"></a>)</span>
+<span id="cb5-9"><a href="#cb5-9" tabindex="-1"></a><span class="fu">pvalues</span>(fit_pairwise, <span class="fu">c</span>(<span class="st">&quot;SB&quot;</span>, <span class="st">&quot;SS&quot;</span>, <span class="st">&quot;PEBA4&quot;</span>))</span>
+<span id="cb5-10"><a href="#cb5-10" tabindex="-1"></a><span class="co">#&gt;        sb_ml        ss_ml     peba4_ml </span></span>
+<span id="cb5-11"><a href="#cb5-11" tabindex="-1"></a><span class="co">#&gt; 3.952479e-07 7.174855e-06 2.527975e-06 </span></span>
+<span id="cb5-12"><a href="#cb5-12" tabindex="-1"></a><span class="co">#&gt; estimator: DWLS (WLSMV) | data: categorical | information: expected | df: 24</span></span></code></pre></div>
 </div>
-<div id="nested-categorical-models" class="section level2">
-<h2>Nested categorical models</h2>
-<p>For categorical models, nested comparison uses Satorra’s 2000
-construction and the delta restriction map:</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a>constrained <span class="ot">&lt;-</span> <span class="st">&quot;</span></span>
-<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a><span class="st">  visual  =~ x1 + a*x2 + a*x3</span></span>
-<span id="cb6-3"><a href="#cb6-3" tabindex="-1"></a><span class="st">  textual =~ x4 + b*x5 + b*x6</span></span>
-<span id="cb6-4"><a href="#cb6-4" tabindex="-1"></a><span class="st">  speed   =~ x7 + x8 + x9</span></span>
-<span id="cb6-5"><a href="#cb6-5" tabindex="-1"></a><span class="st">&quot;</span></span>
-<span id="cb6-6"><a href="#cb6-6" tabindex="-1"></a></span>
-<span id="cb6-7"><a href="#cb6-7" tabindex="-1"></a>m1 <span class="ot">&lt;-</span> <span class="fu">cfa</span>(</span>
-<span id="cb6-8"><a href="#cb6-8" tabindex="-1"></a>  model, ordinal_data,</span>
-<span id="cb6-9"><a href="#cb6-9" tabindex="-1"></a>  <span class="at">ordered =</span> ordered_names, <span class="at">estimator =</span> <span class="st">&quot;WLSMV&quot;</span></span>
-<span id="cb6-10"><a href="#cb6-10" tabindex="-1"></a>)</span>
-<span id="cb6-11"><a href="#cb6-11" tabindex="-1"></a>m0 <span class="ot">&lt;-</span> <span class="fu">cfa</span>(</span>
-<span id="cb6-12"><a href="#cb6-12" tabindex="-1"></a>  constrained, ordinal_data,</span>
-<span id="cb6-13"><a href="#cb6-13" tabindex="-1"></a>  <span class="at">ordered =</span> ordered_names, <span class="at">estimator =</span> <span class="st">&quot;WLSMV&quot;</span></span>
-<span id="cb6-14"><a href="#cb6-14" tabindex="-1"></a>)</span>
-<span id="cb6-15"><a href="#cb6-15" tabindex="-1"></a></span>
-<span id="cb6-16"><a href="#cb6-16" tabindex="-1"></a><span class="fu">pvalues_nested</span>(</span>
-<span id="cb6-17"><a href="#cb6-17" tabindex="-1"></a>  m0, m1,</span>
-<span id="cb6-18"><a href="#cb6-18" tabindex="-1"></a>  <span class="at">method =</span> <span class="st">&quot;2000&quot;</span>, <span class="at">A.method =</span> <span class="st">&quot;delta&quot;</span>,</span>
-<span id="cb6-19"><a href="#cb6-19" tabindex="-1"></a>  <span class="at">tests =</span> <span class="fu">c</span>(<span class="st">&quot;SB&quot;</span>, <span class="st">&quot;SS&quot;</span>, <span class="st">&quot;PALL&quot;</span>)</span>
-<span id="cb6-20"><a href="#cb6-20" tabindex="-1"></a>)</span>
-<span id="cb6-21"><a href="#cb6-21" tabindex="-1"></a><span class="co">#&gt;     sb_ml     ss_ml   pall_ml </span></span>
-<span id="cb6-22"><a href="#cb6-22" tabindex="-1"></a><span class="co">#&gt; 0.7312051 0.6986248 0.7275842 </span></span>
-<span id="cb6-23"><a href="#cb6-23" tabindex="-1"></a><span class="co">#&gt; estimator: DWLS (WLSMV) | data: categorical | information: expected | df: 2 | nested (method 2000, A.method delta)</span></span></code></pre></div>
-<p>Both fits must use the same requested estimator, parameterization,
-variables, groups, raw data, and missingness mask. Method 2001 and the
-exact restriction map are unavailable for this family.</p>
-</div>
-<div id="practical-checks" class="section level2">
-<h2>Practical checks</h2>
-<p>Before reading too much into a p-value, check the basics:</p>
-<ol style="list-style-type: decimal">
-<li>Verify convergence and adequate category counts.</li>
-<li>Look for sparse categories and, when relevant, small pairwise
-counts.</li>
-<li>Confirm that the two nested fits use identical data and
-options.</li>
-<li>Compare <code>SB</code> and <code>SS</code> with lavaan as a quick
-numerical check.</li>
-<li>Report the estimator and any use of pairwise missingness.</li>
-</ol>
+<div id="measurement-invariance" class="section level2">
+<h2>Measurement invariance</h2>
+<p>Measurement invariance asks whether the indicators measure the
+factors the same way in each group. The usual approach fits a sequence
+of increasingly restricted models and compares each with the previous
+one. For ordinal indicators, Wu and Estabrook (2016) recommend
+restricting the thresholds before the loadings. We compare the two
+schools in the data:</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a>configural <span class="ot">&lt;-</span> <span class="fu">cfa</span>(model, ordinal_data,</span>
+<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a>  <span class="at">ordered =</span> items, <span class="at">group =</span> <span class="st">&quot;school&quot;</span>, <span class="at">estimator =</span> <span class="st">&quot;WLSMV&quot;</span></span>
+<span id="cb6-3"><a href="#cb6-3" tabindex="-1"></a>)</span>
+<span id="cb6-4"><a href="#cb6-4" tabindex="-1"></a>equal_thresholds <span class="ot">&lt;-</span> <span class="fu">cfa</span>(model, ordinal_data,</span>
+<span id="cb6-5"><a href="#cb6-5" tabindex="-1"></a>  <span class="at">ordered =</span> items, <span class="at">group =</span> <span class="st">&quot;school&quot;</span>, <span class="at">estimator =</span> <span class="st">&quot;WLSMV&quot;</span>,</span>
+<span id="cb6-6"><a href="#cb6-6" tabindex="-1"></a>  <span class="at">group.equal =</span> <span class="st">&quot;thresholds&quot;</span></span>
+<span id="cb6-7"><a href="#cb6-7" tabindex="-1"></a>)</span>
+<span id="cb6-8"><a href="#cb6-8" tabindex="-1"></a>equal_loadings <span class="ot">&lt;-</span> <span class="fu">cfa</span>(model, ordinal_data,</span>
+<span id="cb6-9"><a href="#cb6-9" tabindex="-1"></a>  <span class="at">ordered =</span> items, <span class="at">group =</span> <span class="st">&quot;school&quot;</span>, <span class="at">estimator =</span> <span class="st">&quot;WLSMV&quot;</span>,</span>
+<span id="cb6-10"><a href="#cb6-10" tabindex="-1"></a>  <span class="at">group.equal =</span> <span class="fu">c</span>(<span class="st">&quot;thresholds&quot;</span>, <span class="st">&quot;loadings&quot;</span>)</span>
+<span id="cb6-11"><a href="#cb6-11" tabindex="-1"></a>)</span></code></pre></div>
+<p>When the thresholds are held equal, lavaan frees the intercepts and
+scale factors of the latent responses in the second school, which is the
+identification of Wu and Estabrook. The 27 threshold equalities
+therefore remove 9 degrees of freedom. With three categories there would
+be 18 equalities and 18 freed parameters, and the threshold model would
+be equivalent to the configural model.</p>
+<p>Each nested comparison takes the more restricted model first:</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a>thresholds_test <span class="ot">&lt;-</span> <span class="fu">pvalues_nested</span>(equal_thresholds, configural,</span>
+<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a>  <span class="at">tests =</span> <span class="fu">c</span>(<span class="st">&quot;SB&quot;</span>, <span class="st">&quot;SS&quot;</span>, <span class="st">&quot;PALL&quot;</span>)</span>
+<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a>)</span>
+<span id="cb7-4"><a href="#cb7-4" tabindex="-1"></a>loadings_test <span class="ot">&lt;-</span> <span class="fu">pvalues_nested</span>(equal_loadings, equal_thresholds,</span>
+<span id="cb7-5"><a href="#cb7-5" tabindex="-1"></a>  <span class="at">tests =</span> <span class="fu">c</span>(<span class="st">&quot;SB&quot;</span>, <span class="st">&quot;SS&quot;</span>, <span class="st">&quot;PALL&quot;</span>)</span>
+<span id="cb7-6"><a href="#cb7-6" tabindex="-1"></a>)</span>
+<span id="cb7-7"><a href="#cb7-7" tabindex="-1"></a>thresholds_test</span>
+<span id="cb7-8"><a href="#cb7-8" tabindex="-1"></a><span class="co">#&gt;     sb_ml     ss_ml   pall_ml </span></span>
+<span id="cb7-9"><a href="#cb7-9" tabindex="-1"></a><span class="co">#&gt; 0.7167006 0.7119125 0.7155130 </span></span>
+<span id="cb7-10"><a href="#cb7-10" tabindex="-1"></a><span class="co">#&gt; estimator: DWLS (WLSMV) | data: categorical | information: expected | df: 9 | nested (method 2000, A.method weighted)</span></span>
+<span id="cb7-11"><a href="#cb7-11" tabindex="-1"></a>loadings_test</span>
+<span id="cb7-12"><a href="#cb7-12" tabindex="-1"></a><span class="co">#&gt;     sb_ml     ss_ml   pall_ml </span></span>
+<span id="cb7-13"><a href="#cb7-13" tabindex="-1"></a><span class="co">#&gt; 0.9971645 0.9899861 0.9970424 </span></span>
+<span id="cb7-14"><a href="#cb7-14" tabindex="-1"></a><span class="co">#&gt; estimator: DWLS (WLSMV) | data: categorical | information: expected | df: 6 | nested (method 2000, A.method weighted)</span></span></code></pre></div>
+<p>With <code>PALL</code>, equal thresholds give <em>p</em> = 0.716 and
+adding equal loadings gives <em>p</em> = 0.997, so neither restriction
+is rejected. The configural model itself does not fit exactly:</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a><span class="fu">pvalues</span>(configural)</span>
+<span id="cb8-2"><a href="#cb8-2" tabindex="-1"></a><span class="co">#&gt;     peba4_ml </span></span>
+<span id="cb8-3"><a href="#cb8-3" tabindex="-1"></a><span class="co">#&gt; 1.638551e-05 </span></span>
+<span id="cb8-4"><a href="#cb8-4" tabindex="-1"></a><span class="co">#&gt; estimator: DWLS (WLSMV) | data: categorical | information: expected | df: 48</span></span></code></pre></div>
+<p>The nested tests assume that the larger model is correct.
+<code>vignette(&quot;score-criterion&quot;, package = &quot;semTests&quot;)</code> describes
+restriction tests that allow it to be misspecified.</p>
+<p>Nested tests for ordinal data use Satorra’s (2000) construction with
+the default <code>A.method = &quot;weighted&quot;</code>, or lavaan’s
+<code>&quot;delta&quot;</code>. The <code>&quot;exact&quot;</code> restriction matrix is not
+available here. Both fits must use the same estimator, parameterization,
+variables, groups, data, and missingness pattern.</p>
 </div>
 <div id="references" class="section level2">
 <h2>References</h2>
@@ -560,6 +484,9 @@ numerical check.</li>
 multi-sample analysis of moment structures. In R. D. H. Heijmans, D. S.
 G. Pollock, &amp; A. Satorra (Eds.), <em>Innovations in Multivariate
 Statistical Analysis</em> (pp. 233–247). Kluwer Academic. <a href="https://doi.org/10.1007/978-1-4615-4603-0_17" class="uri">https://doi.org/10.1007/978-1-4615-4603-0_17</a></p>
+<p>Wu, H., &amp; Estabrook, R. (2016). Identification of confirmatory
+factor analysis models of different levels of invariance for ordered
+categorical outcomes. <em>Psychometrika</em>, 81(4), 1014–1045. <a href="https://doi.org/10.1007/s11336-016-9506-0" class="uri">https://doi.org/10.1007/s11336-016-9506-0</a></p>
 </div>
 
 
